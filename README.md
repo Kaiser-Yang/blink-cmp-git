@@ -140,7 +140,7 @@ such as `Git Lab` or `Gitee`.
 
 See [default.lua](./lua/blink-cmp-git/default.lua) for the default configuration.
 
-To see how I configured: [blink-cmp-git]().
+To see how I configured: [blink-cmp-git](https://github.com/Kaiser-Yang/dotfiles/commit/66d5644347187e824a25d804eb776bc86c4b21c2).
 
 ## Performance
 
