@@ -52,6 +52,8 @@ Add the plugin to your packer managers, and make sure it is loaded before `blink
                     -- enable the source when the filetype is gitcommit or markdown
                     return vim.o.filetype == 'gitcommit' or vim.o.filetype == 'markdown'
                 end,
+                --- @module 'blink-cmp-git'
+                --- @type blink-cmp-git.Options
                 opts = {
                     -- some options for the blink-cmp-git
                 }
