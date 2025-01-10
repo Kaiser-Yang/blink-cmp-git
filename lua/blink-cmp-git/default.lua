@@ -91,7 +91,7 @@ local default_github_pr_and_issue_seperate_output = function(output)
         items[i] = {
             label = '#' .. json_field_helper(json_res[i].number) ..
                 ' ' .. json_field_helper(json_res[i].title),
-            insert_text = '#' .. json_field_helper(json_res[i].number),
+            insert_text = '#' .. json_field_helper(json_res[i].number) .. ' ',
             documentation =
                 '#' .. json_field_helper(json_res[i].number) ..
                 ' ' .. json_field_helper(json_res[i].title) .. '\n' ..
@@ -150,7 +150,7 @@ local default = {
                     for i = 1, #json_res do
                         items[i] = {
                             label = '@' .. json_field_helper(json_res[i].login),
-                            insert_text = '@' .. json_field_helper(json_res[i].login),
+                            insert_text = '@' .. json_field_helper(json_res[i].login) .. ' ',
                             documentation = {
                                 get_command = 'gh',
                                 get_command_args = {
