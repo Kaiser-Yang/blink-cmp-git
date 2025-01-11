@@ -134,6 +134,19 @@ function GitSource:get_completions(context, callback)
     local cached_items = get_cached_items(trigger)
     if cached_items then
         items = cached_items
+        for key in pairs(items) do
+            -- only need to update the range
+            items[key].textEdit.range = {
+                start = {
+                    line = context.cursor[1] - 1,
+                    character = context.cursor[2] - 1
+                },
+                ['end'] = {
+                    line = context.cursor[1] - 1,
+                    character = context.cursor[2] - 1 + #items[key].textEdit.newText
+                }
+            }
+        end
         transformed_callback()
         return cancel_fun
     end
