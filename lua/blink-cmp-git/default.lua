@@ -29,7 +29,7 @@ local default_commit = {
         '--pretty=fuller',
         '--decorate=no',
     },
-    seperate_output = function(output)
+    separate_output = function(output)
         local lines = vim.split(output, '\n')
         local i = 1
         local commits = {}
@@ -83,7 +83,7 @@ local function remote_contains_github()
     return output:find('github.com') ~= nil
 end
 
-local default_github_pr_and_issue_seperate_output = function(output)
+local default_github_pr_and_issue_separate_output = function(output)
     --- @type blink-cmp-git.CompletionItem[]
     local items = {}
     local json_res = vim.json.decode(output)
@@ -123,7 +123,7 @@ local default = {
                     'list',
                     '--json', 'number,title,state,body,createdAt,updatedAt,closedAt,author',
                 },
-                seperate_output = default_github_pr_and_issue_seperate_output,
+                separate_output = default_github_pr_and_issue_separate_output,
             },
             pull_request = {
                 enable = remote_contains_github,
@@ -134,7 +134,7 @@ local default = {
                     'list',
                     '--json', 'number,title,state,body,createdAt,updatedAt,closedAt,author',
                 },
-                seperate_output = default_github_pr_and_issue_seperate_output,
+                separate_output = default_github_pr_and_issue_separate_output,
             },
             mention = {
                 enable = remote_contains_github,
@@ -144,7 +144,7 @@ local default = {
                     'api',
                     'repos/:owner/:repo/contributors',
                 },
-                seperate_output = function(output)
+                separate_output = function(output)
                     local json_res = vim.json.decode(output)
                     local items = {}
                     for i = 1, #json_res do

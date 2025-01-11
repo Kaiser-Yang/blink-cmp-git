@@ -142,7 +142,7 @@ function GitSource:get_completions(context, callback)
                             return
                         end
                         if utils.truthy(j:result()) then
-                            local match_list = utils.get_option(feature.seperate_output,
+                            local match_list = utils.get_option(feature.separate_output,
                                 table.concat(j:result(), '\n'))
                             vim.iter(match_list):each(function(match)
                                 items[match] = {

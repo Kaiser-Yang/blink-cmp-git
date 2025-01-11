@@ -13,7 +13,7 @@
 --- @field triggers? string[]|fun(): string[]
 --- @field get_command? string|fun(): string
 --- @field get_command_args? string[]|fun(): string[]
---- @field seperate_output? fun(output: string): blink-cmp-git.CompletionItem[]
+--- @field separate_output? fun(output: string): blink-cmp-git.CompletionItem[]
 
 --- @class (exact) blink-cmp-git.GCSOptions
 --- @field commit? blink-cmp-git.GCSCompletionOptions
