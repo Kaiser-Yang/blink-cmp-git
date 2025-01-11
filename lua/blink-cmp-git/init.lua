@@ -109,6 +109,20 @@ local function get_enabled_features()
     return result
 end
 
+local function get_text_edit_range(context)
+    return {
+        -- This range make it possible to remove the trigger character
+        start = {
+            line = context.cursor[1] - 1,
+            character = context.cursor[2] - 1
+        },
+        ['end'] = {
+            line = context.cursor[1] - 1,
+            character = context.cursor[2]
+        }
+    }
+end
+
 function GitSource:get_completions(context, callback)
     local cancel_fun = function() end
     local items = {}
@@ -135,17 +149,8 @@ function GitSource:get_completions(context, callback)
     if cached_items then
         items = cached_items
         for key in pairs(items) do
-            -- only need to update the range
-            items[key].textEdit.range = {
-                start = {
-                    line = context.cursor[1] - 1,
-                    character = context.cursor[2] - 1
-                },
-                ['end'] = {
-                    line = context.cursor[1] - 1,
-                    character = context.cursor[2] - 1 + #items[key].textEdit.newText
-                }
-            }
+            -- Only need to update the range
+            items[key].textEdit.range = get_text_edit_range(context)
         end
         transformed_callback()
         return cancel_fun
@@ -182,18 +187,7 @@ function GitSource:get_completions(context, callback)
                                 kind = require('blink.cmp.types').CompletionItemKind.Text,
                                 textEdit = {
                                     newText = match.insert_text,
-                                    range = {
-                                        start = {
-                                            line = context.cursor[1] - 1,
-                                            character = context.cursor[2] - 1
-                                        },
-                                        ['end'] = {
-                                            line = context.cursor[1] - 1,
-                                            -- TODO: check this
-                                            character = context.cursor[2] - 1
-                                                + #match.insert_text
-                                        }
-                                    }
+                                    range = get_text_edit_range(context)
                                 },
                                 documentation = match.documentation,
                                 gitSouceTrigger = trigger,
