@@ -7,12 +7,10 @@ local log = require('blink-cmp-git.log')
 local Job = require('plenary.job')
 log.setup({ title = 'blink-cmp-git' })
 
---- @type blink.cmp.Source
---- @diagnostic disable-next-line: missing-fields
+--- @class blink.cmp.Source
+--- @field git_source_config blink-cmp-git.Options
+--- @field cache blink-cmp-git.Cache
 local GitSource = {}
---- @type blink-cmp-git.Options
-local git_source_config
-local items_cache
 
 --- @param documentation_command blink-cmp-git.DocumentationCommand
 --- @return Job
@@ -23,77 +21,9 @@ local function create_job_from_documentation_command(documentation_command)
     })
 end
 
-local function set_cached_items(trigger, items)
-    if not utils.get_option(git_source_config.use_items_cache) or not utils.truthy(trigger) then
-        return
-    end
-    if not items_cache[trigger] then
-        items_cache[trigger] = {}
-    end
-    for _, item in pairs(items) do
-        items_cache[trigger][item.label] = item
-    end
-end
-
-local function get_cached_items(trigger)
-    if not utils.get_option(git_source_config.use_items_cache) or not utils.truthy(trigger) then
-        return nil
-    end
-    return items_cache[trigger]
-end
-
-local function set_cached_item_documentation(trigger, label, documentation)
-    if not utils.get_option(git_source_config.use_items_cache) or
-        not utils.truthy(trigger) or not utils.truthy(label) then
-        return
-    end
-    if not items_cache[trigger] then
-        items_cache[trigger] = {}
-    end
-    if not items_cache[trigger][label] then
-        items_cache[trigger][label] = {}
-    end
-    items_cache[trigger][label].documentation = documentation
-end
-
-local function get_cached_item_documentation(trigger, label)
-    if not utils.get_option(git_source_config.use_items_cache) or
-        not utils.truthy(trigger) or not utils.truthy(label) then
-        return nil
-    end
-    return items_cache[trigger] and items_cache[trigger][label] and
-        type(items_cache[trigger][label].documentation) == 'string' and
-        items_cache[trigger][label].documentation or nil
-end
-
---- @param opts blink-cmp-git.Options
-function GitSource.new(opts, _)
-    local self = setmetatable({}, { __index = GitSource })
-    git_source_config = vim.tbl_deep_extend("force", default, opts or {})
-    items_cache = {}
-    return self
-end
-
-function GitSource:get_trigger_characters()
-    local result = {}
-    for _, git_center in ipairs(vim.tbl_values(git_source_config.git_centers)) do
-        for _, feature in pairs(git_center) do
-            local feature_triggers = utils.get_option(feature.triggers)
-            if utils.truthy(feature_triggers) then
-                for _, trigger in ipairs(feature_triggers) do
-                    table.insert(result, trigger)
-                end
-            end
-        end
-    end
-    for _, trigger in ipairs(utils.get_option(git_source_config.commit.triggers)) do
-        table.insert(result, trigger)
-    end
-    return result
-end
-
+--- @param git_source_config blink-cmp-git.Options
 --- @return blink-cmp-git.GCSCompletionOptions[]
-local function get_enabled_features()
+local function get_enabled_features(git_source_config)
     local result = {}
     for _, git_center in ipairs(vim.tbl_values(git_source_config.git_centers)) do
         for _, feature in pairs(git_center) do
@@ -109,6 +39,8 @@ local function get_enabled_features()
     return result
 end
 
+--- @param context blink.cmp.Context
+--- @return lsp.TextEdit
 local function get_text_edit_range(context)
     return {
         -- This range make it possible to remove the trigger character
@@ -123,6 +55,35 @@ local function get_text_edit_range(context)
     }
 end
 
+--- @param opts blink-cmp-git.Options
+--- @return blink-cmp-git.GCSCompletionOptions[]
+function GitSource.new(opts, _)
+    local self = setmetatable({}, { __index = GitSource })
+    self.git_source_config = vim.tbl_deep_extend("force", default, opts or {})
+    self.cache = require('blink-cmp-git.cache').new()
+    return self
+end
+
+function GitSource:get_trigger_characters()
+    local result = {}
+    for _, git_center in ipairs(vim.tbl_values(self.git_source_config.git_centers)) do
+        for _, feature in pairs(git_center) do
+            local feature_triggers = utils.get_option(feature.triggers)
+            if utils.truthy(feature_triggers) then
+                for _, trigger in ipairs(feature_triggers) do
+                    table.insert(result, trigger)
+                end
+            end
+        end
+    end
+    for _, trigger in ipairs(utils.get_option(self.git_source_config.commit.triggers)) do
+        table.insert(result, trigger)
+    end
+    return result
+end
+
+--- @param context blink.cmp.Context
+--- @param callback fun(response?: blink.cmp.CompletionResponse)
 function GitSource:get_completions(context, callback)
     local cancel_fun = function() end
     local items = {}
@@ -135,20 +96,26 @@ function GitSource:get_completions(context, callback)
             })
         end)
     end
-    local async = utils.get_option(git_source_config.async)
     ---@diagnostic disable-next-line: param-type-mismatch
     if not self:should_show_completions(context, nil) then
         transformed_callback()
         return cancel_fun
     end
-    if utils.get_option(git_source_config.should_reload_items_cache) then
-        items_cache = {}
+    local async = utils.get_option(self.git_source_config.async)
+    local use_items_cache = utils.get_option(self.git_source_config.use_items_cache)
+    local should_reload_items_cache = utils.get_option(self.git_source_config.should_reload_items_cache)
+    if should_reload_items_cache then
+        self.cache:clear()
     end
     local trigger = context.trigger.initial_character
-    local cached_items = get_cached_items(trigger)
+    local cached_items
+    if use_items_cache then
+---@diagnostic disable-next-line: param-type-mismatch
+        cached_items = self.cache:get(trigger)
+    end
     if cached_items then
         items = cached_items
-        for key in pairs(items) do
+        for key, item in pairs(items) do
             -- Only need to update the range
             items[key].textEdit.range = get_text_edit_range(context)
         end
@@ -158,7 +125,7 @@ function GitSource:get_completions(context, callback)
     --- @type Job
     local job
     local trigger_pos = context.cursor[2] - 1
-    local enabled_features = get_enabled_features()
+    local enabled_features = get_enabled_features(self.git_source_config)
     for _, feature in ipairs(enabled_features) do
         local feature_triggers = utils.get_option(feature.triggers)
         if utils.truthy(feature_triggers) and vim.tbl_contains(feature_triggers, trigger) then
@@ -190,7 +157,7 @@ function GitSource:get_completions(context, callback)
                                     range = get_text_edit_range(context)
                                 },
                                 documentation = match.documentation,
-                                gitSouceTrigger = trigger,
+                                gitSourceTrigger = trigger,
                             }
                         end)
                     else
@@ -211,7 +178,11 @@ function GitSource:get_completions(context, callback)
         return cancel_fun
     end
     job:after(function()
-        set_cached_items(trigger, items)
+        if use_items_cache then
+            for key, item in pairs(items) do
+                self.cache:set({ trigger, item.label }, item)
+            end
+        end
         transformed_callback()
     end)
     if async then
@@ -226,25 +197,42 @@ function GitSource:get_completions(context, callback)
 end
 
 -- HACK: the blink.cmp does not call this function
+--- @param context blink.cmp.Context
 function GitSource:should_show_completions(context, _)
     return context.trigger.initial_kind == 'trigger_character' and context.mode ~= 'cmdline'
         and vim.tbl_contains(self:get_trigger_characters(), context.trigger.initial_character)
 end
 
+--- @param item blink.cmp.CompletionItem
+--- @param callback fun(item: blink.cmp.CompletionItem)
 function GitSource:resolve(item, callback)
     ---@diagnostic disable-next-line: undefined-field
     local trigger = item.gitSourceTrigger
     local transformed_callback = function()
-        callback(item)
+        vim.schedule(function()
+            callback(item)
+        end)
     end
-    local cached_item_documentation = get_cached_item_documentation(trigger, item.label)
+    local use_items_cache = utils.get_option(self.git_source_config.use_items_cache)
+    local cached_item_documentation
+    if use_items_cache then
+        cached_item_documentation = self.cache:get({ trigger, item.label, 'documentation' })
+    end
     if cached_item_documentation then
         item.documentation = cached_item_documentation
+        if item.documentation == '' then
+            item.documentation = nil
+        end
         transformed_callback()
         return
     end
-    if type(item.documentation) == 'string' then
-        set_cached_item_documentation(trigger, item.label, item.documentation)
+    if type(item.documentation) == 'string' or not item.documentation then
+        if use_items_cache then
+            self.cache:set({ trigger, item.label, 'documentation' }, item.documentation)
+        end
+        if item.documentation == '' then
+            item.documentation = nil
+        end
         transformed_callback()
         return
     end
@@ -255,13 +243,15 @@ function GitSource:resolve(item, callback)
             item.documentation =
             ---@diagnostic disable-next-line: undefined-field
                 item.documentation.resolve_documentation(table.concat(job:result(), '\n'))
-            set_cached_item_documentation(trigger, item.label, item.documentation)
+            if use_items_cache then
+                self.cache:set({ trigger, item.label, 'documentation' }, item.documentation)
+            end
         else
             item.documentation = nil
         end
         transformed_callback()
     end)
-    if utils.get_option(git_source_config.async) then
+    if utils.get_option(self.git_source_config.async) then
         job:start()
     else
         job:sync()
