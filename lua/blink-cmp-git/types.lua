@@ -23,6 +23,7 @@
 --- @class (exact) blink-cmp-git.Options
 --- @field async? boolean|fun(): boolean
 --- @field use_items_cache? boolean|fun(): boolean
+--- @field use_items_pre_cache? boolean|fun(): boolean
 --- @field commit? blink-cmp-git.GCSCompletionOptions
 --- @field git_centers? table<string, blink-cmp-git.GCSOptions>
 --- @field should_reload_items_cache? boolean|fun(): boolean|fun(): boolean
