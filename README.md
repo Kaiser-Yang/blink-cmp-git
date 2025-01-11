@@ -153,6 +153,16 @@ cached when you first trigger the completion by inputting `@`, `#`, or `:`
 (You can DIY the triggers). For the documentation of `mention` feature,
 it will be cached when you hover on one item.
 
+## Version Introduction
+
+The release versions are something like `major.minor.patch`. When one of these numbers is increased:
+
+* `patch`: bugs are fixed or docs are added. This will not break the compatibility.
+* `minor`: compatible features are added. This may cause some configurations `deprecated`, but
+not break the compatibility.
+* `major`: incompatible features are added. All the `deprecated` configurations will be removed.
+This will break the compatibility.
+
 ## Acknowledgment
 
 Nice and fast completion plugin: [blink.cmp](https://github.com/Saghen/blink.cmp).
