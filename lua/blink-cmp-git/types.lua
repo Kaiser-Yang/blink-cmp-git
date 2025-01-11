@@ -16,7 +16,6 @@
 --- @field separate_output? fun(output: string): blink-cmp-git.CompletionItem[]
 
 --- @class (exact) blink-cmp-git.GCSOptions
---- @field commit? blink-cmp-git.GCSCompletionOptions
 --- @field issue? blink-cmp-git.GCSCompletionOptions
 --- @field pull_request? blink-cmp-git.GCSCompletionOptions
 --- @field mention? blink-cmp-git.GCSCompletionOptions
@@ -24,5 +23,6 @@
 --- @class (exact) blink-cmp-git.Options
 --- @field async? boolean|fun(): boolean
 --- @field use_items_cache? boolean|fun(): boolean
+--- @field commit? blink-cmp-git.GCSCompletionOptions
 --- @field git_centers? table<string, blink-cmp-git.GCSOptions>
 --- @field should_reload_items_cache? boolean|fun(): boolean|fun(): boolean

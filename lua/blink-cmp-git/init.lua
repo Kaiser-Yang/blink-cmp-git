@@ -5,7 +5,6 @@ local default = require('blink-cmp-git.default')
 local utils = require('blink-cmp-git.utils')
 local log = require('blink-cmp-git.log')
 local Job = require('plenary.job')
-local async = require('plenary.async')
 log.setup({ title = 'blink-cmp-git' })
 
 --- @type blink.cmp.Source
@@ -87,6 +86,26 @@ function GitSource:get_trigger_characters()
             end
         end
     end
+    for _, trigger in ipairs(utils.get_option(git_source_config.commit.triggers)) do
+        table.insert(result, trigger)
+    end
+    return result
+end
+
+--- @return blink-cmp-git.GCSCompletionOptions[]
+local function get_enabled_features()
+    local result = {}
+    for _, git_center in ipairs(vim.tbl_values(git_source_config.git_centers)) do
+        for _, feature in pairs(git_center) do
+            if utils.get_option(feature.enable) then
+                table.insert(result, feature)
+            end
+        end
+    end
+    local commit = utils.get_option(git_source_config.commit)
+    if commit and utils.get_option(commit.enable) then
+        table.insert(result, commit)
+    end
     return result
 end
 
@@ -94,12 +113,15 @@ function GitSource:get_completions(context, callback)
     local cancel_fun = function() end
     local items = {}
     local transformed_callback = function()
-        callback({
-            is_incomplete_backward = false,
-            is_incomplete_forward = false,
-            items = vim.tbl_values(items)
-        })
+        vim.schedule(function()
+            callback({
+                is_incomplete_backward = false,
+                is_incomplete_forward = false,
+                items = vim.tbl_values(items)
+            })
+        end)
     end
+    local async = utils.get_option(git_source_config.async)
     ---@diagnostic disable-next-line: param-type-mismatch
     if not self:should_show_completions(context, nil) then
         transformed_callback()
@@ -118,67 +140,65 @@ function GitSource:get_completions(context, callback)
     --- @type Job
     local job
     local trigger_pos = context.cursor[2] - 1
-    for _, git_center in ipairs(vim.tbl_values(git_source_config.git_centers)) do
-        for _, feature in pairs(git_center) do
-            if not utils.get_option(feature.enable) then
-                goto continue
-            end
-            local feature_triggers = utils.get_option(feature.triggers)
-            if utils.truthy(feature_triggers) and vim.tbl_contains(feature_triggers, trigger) then
-                local cmd = utils.get_option(feature.get_command)
-                local cmd_args = utils.get_option(feature.get_command_args)
-                local feature_job = Job:new({
-                    command = cmd,
-                    args = cmd_args,
-                    on_exit = function(j, return_value, _)
-                        if return_value ~= 0 and utils.truthy(j:stderr_result()) then
-                            log.error('command failed:', cmd,
-                                '\n',
-                                'cmd_args:', cmd_args,
-                                '\n',
-                                'with error code:', return_value,
-                                '\n',
-                                'stderr:', j:stderr_result())
-                            return
-                        end
-                        if utils.truthy(j:result()) then
-                            local match_list = utils.get_option(feature.separate_output,
-                                table.concat(j:result(), '\n'))
-                            vim.iter(match_list):each(function(match)
-                                items[match] = {
-                                    label = match.label,
-                                    kind = require('blink.cmp.types').CompletionItemKind.Text,
-                                    textEdit = {
-                                        newText = match.insert_text,
-                                        range = {
-                                            start = {
-                                                line = context.cursor[1] - 1,
-                                                character = context.cursor[2] - 1
-                                            },
-                                            ['end'] = {
-                                                line = context.cursor[1] - 1,
-                                                character = context.cursor[2] - 1 + #match.insert_text
-                                            }
-                                        }
-                                    },
-                                    documentation = match.documentation,
-                                    gitSouceTrigger = trigger,
-                                }
-                            end)
-                        else
-                            log.trace('search command return empty result')
-                        end
+    local enabled_features = get_enabled_features()
+    for _, feature in ipairs(enabled_features) do
+        local feature_triggers = utils.get_option(feature.triggers)
+        if utils.truthy(feature_triggers) and vim.tbl_contains(feature_triggers, trigger) then
+            local cmd = utils.get_option(feature.get_command)
+            local cmd_args = utils.get_option(feature.get_command_args)
+            local next_job = Job:new({
+                command = cmd,
+                args = cmd_args,
+                on_exit = function(j, return_value, _)
+                    if return_value ~= 0 and utils.truthy(j:stderr_result()) then
+                        log.error('command failed:', cmd,
+                            '\n',
+                            'cmd_args:', cmd_args,
+                            '\n',
+                            'with error code:', return_value,
+                            '\n',
+                            'stderr:', j:stderr_result())
+                        return
                     end
-                })
-                if not job then
-                    job = feature_job
-                else
-                    job:and_then(feature_job)
+                    if utils.truthy(j:result()) then
+                        local match_list = utils.get_option(feature.separate_output,
+                            table.concat(j:result(), '\n'))
+                        vim.iter(match_list):each(function(match)
+                            items[match] = {
+                                label = match.label,
+                                kind = require('blink.cmp.types').CompletionItemKind.Text,
+                                textEdit = {
+                                    newText = match.insert_text,
+                                    range = {
+                                        start = {
+                                            line = context.cursor[1] - 1,
+                                            character = context.cursor[2] - 1
+                                        },
+                                        ['end'] = {
+                                            line = context.cursor[1] - 1,
+                                            -- TODO: check this
+                                            character = context.cursor[2] - 1
+                                                + #match.insert_text
+                                        }
+                                    }
+                                },
+                                documentation = match.documentation,
+                                gitSouceTrigger = trigger,
+                            }
+                        end)
+                    else
+                        log.trace('search command return empty result')
+                    end
                 end
+            })
+            if not job then
+                job = next_job
+            else
+                job:and_then(next_job)
             end
-            ::continue::
         end
     end
+    -- the feature for the trigger may not be enabled
     if job == nil then
         transformed_callback()
         return cancel_fun
@@ -187,8 +207,10 @@ function GitSource:get_completions(context, callback)
         set_cached_items(trigger, items)
         transformed_callback()
     end)
-    if utils.get_option(git_source_config.async) then
+    if async then
         cancel_fun = function() job:shutdown(0, nil) end
+    end
+    if async then
         job:start()
     else
         job:sync()
@@ -199,6 +221,7 @@ end
 -- HACK: the blink.cmp does not call this function
 function GitSource:should_show_completions(context, _)
     return context.trigger.initial_kind == 'trigger_character' and context.mode ~= 'cmdline'
+        and vim.tbl_contains(self:get_trigger_characters(), context.trigger.initial_character)
 end
 
 function GitSource:resolve(item, callback)
