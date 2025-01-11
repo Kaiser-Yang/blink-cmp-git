@@ -96,7 +96,7 @@ There are some important options you may be interested in:
                 },
                 -- The standard output will be parsed to this function
                 -- This function must return a list of items
-                seperate_output = function(output)
+                separate_output = function(output)
                     local json_res = vim.json.decode(output)
                     local items = {}
                     for i = 1, #json_res do
