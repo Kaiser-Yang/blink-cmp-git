@@ -10,7 +10,7 @@ log.setup({ title = 'blink-cmp-git' })
 --- @class blink.cmp.Source
 --- @field git_source_config blink-cmp-git.Options
 --- @field cache blink-cmp-git.Cache
---- @field pre_cache_jobs table<string, {items: table, job: Job}>
+--- @field pre_cache_jobs table<string, {items: table, jobs: Job[]}>
 local GitSource = {}
 
 --- @param documentation_command blink-cmp-git.DocumentationCommand
@@ -90,22 +90,38 @@ local function clear_items(items)
 end
 
 function GitSource:create_pre_cache_jobs()
+    local async = utils.get_option(self.git_source_config.async)
     self.pre_cache_jobs = {}
     for _, feature in pairs(self:get_enabled_features()) do
         for _, trigger in pairs(utils.get_option(feature.triggers)) do
-            if self.pre_cache_jobs[trigger] then
-                self.pre_cache_jobs[trigger].job:and_then(create_job_from_feature(feature,
-                    self.pre_cache_jobs[trigger].items))
-            else
-                self.pre_cache_jobs[trigger] = {}
-                self.pre_cache_jobs[trigger].items = {}
-                self.pre_cache_jobs[trigger].job = create_job_from_feature(feature,
-                    self.pre_cache_jobs[trigger].items)
+            if not self.pre_cache_jobs[trigger] then
+                self.pre_cache_jobs[trigger] = {
+                    items = {},
+                    jobs = {},
+                }
             end
+            local jobs_and_items = self.pre_cache_jobs[trigger]
+            local next_job = create_job_from_feature(feature, jobs_and_items.items)
+            if utils.truthy(jobs_and_items.jobs) then
+                jobs_and_items.jobs[#jobs_and_items.jobs]:after(function(code, signal)
+                    -- shutdown
+                    if signal == 9 then
+                        return
+                    end
+                    if async then
+                        next_job:start()
+                    else
+                        -- this must in a schedule
+                        vim.schedule(function() next_job:sync()end)
+                    end
+                end)
+            end
+            table.insert(jobs_and_items.jobs, next_job)
         end
     end
     for trigger, job_and_items in pairs(self.pre_cache_jobs) do
-        job_and_items.job:after(function(_, _, signal)
+        -- let the last job set the cache
+        job_and_items.jobs[#job_and_items.jobs]:after(function(_, _, signal)
             if signal == 9 then
                 return
             end
@@ -119,17 +135,20 @@ end
 
 function GitSource:shutdown_pre_cache_jobs()
     for _, job_and_items in pairs(self.pre_cache_jobs) do
-        job_and_items.job:shutdown(0, 9)
+        for _, job in pairs(job_and_items.jobs) do
+            job:shutdown(0, 9)
+        end
         clear_items(job_and_items.items)
     end
 end
 
 function GitSource:run_pre_cache_jobs()
-    for trigger, job_and_items in pairs(self.pre_cache_jobs) do
-        if utils.get_option(self.git_source_config.async) then
-            job_and_items.job:start()
+    local async = utils.get_option(self.git_source_config.async)
+    for _, job_and_items in pairs(self.pre_cache_jobs) do
+        if async then
+            job_and_items.jobs[1]:start()
         else
-            job_and_items.job:sync()
+            job_and_items.jobs[1]:sync()
         end
     end
 end
@@ -140,17 +159,20 @@ function GitSource.new(opts, _)
     local self = setmetatable({}, { __index = GitSource })
     self.git_source_config = vim.tbl_deep_extend("force", default, opts or {})
     self.cache = require('blink-cmp-git.cache').new()
+    local use_items_cache = utils.get_option(self.git_source_config.use_items_cache)
     local use_items_pre_cache = utils.get_option(self.git_source_config.use_items_pre_cache)
-    if use_items_pre_cache then
+    if use_items_cache and use_items_pre_cache then
         self:create_pre_cache_jobs()
         self:run_pre_cache_jobs()
     end
     vim.api.nvim_create_user_command('BlinkCmpGitReloadCache', function()
-        self.cache:clear()
-        if use_items_pre_cache then
-            self:shutdown_pre_cache_jobs()
-            self:create_pre_cache_jobs()
-            self:run_pre_cache_jobs()
+        if utils.get_option(self.git_source_config.use_items_cache) then
+            self.cache:clear()
+            if utils.get_option(self.git_source_config.use_items_pre_cache) then
+                self:shutdown_pre_cache_jobs()
+                self:create_pre_cache_jobs()
+                self:run_pre_cache_jobs()
+            end
         end
     end, { nargs = 0 })
     return self
@@ -195,37 +217,59 @@ function GitSource:handle_items_pre_cache(context, callback)
         end)
     end
     local job_and_items = self.pre_cache_jobs[trigger]
-    local cancel_fun = function() job_and_items.job:shutdown(0, 9) end
+    local cancel_fun = function()
+        for _, job in pairs(job_and_items.jobs) do
+            job:shutdown(0, 9)
+        end
+    end
     local async = utils.get_option(self.git_source_config.async)
+    -- This happens when the async is true in new, but changed to false in the future
     if not async then
-        self.pre_cache_jobs[trigger].job:wait()
-        -- timeout in 5 seconds, cancel this job if it's not finished
-        if not job_and_items.job.is_shutdown then
-            job_and_items.job:shutdown(0, 9)
+        -- Wait for jobs to finish
+        local timeout = false
+        for _, job in pairs(job_and_items.jobs) do
+            job:wait()
+            if not job.is_shutdown then
+                timeout = true
+                break
+            end
+        end
+        -- any job timeouts in 5 seconds, cancel jobs
+        if timeout then
+            for _, job in pairs(job_and_items.jobs) do
+                job:shutdown(0, 9)
+            end
             clear_items(job_and_items.items)
+            -- completion already canceled, return a function that does nothing
             return function() end
         end
-    elseif not job_and_items.job.is_shutdown then
-        -- Re-run this function to make sure it is asynchronous
-        job_and_items.job:shutdown(0, 9)
+    elseif not job_and_items.jobs[#job_and_items.jobs].is_shutdown then
+        -- Re-run jobs to make sure it is asynchronous
+        for _, job in pairs(job_and_items.jobs) do
+            job:shutdown(0, 9)
+        end
         clear_items(job_and_items.items)
-        job_and_items.job:after(function(j, _, signal)
+        job_and_items.jobs[#job_and_items.jobs]:after(function(j, _, signal)
             -- HACK: there may be a elegant way to do this
             -- Remove this callback to avoid running it again
             -- Make sure this callback is the last one
             table.remove(j._additional_on_exit_callbacks)
             if signal == 9 then
+                vim.schedule(function()
+                    callback()
+                end)
                 return
             end
             items = self.cache:get(trigger) or {}
             transformed_callback()
         end)
-        job_and_items.job:start()
-        return function() end
+        job_and_items.jobs[1]:start()
+        return cancel_fun
     end
     items = self.cache:get(trigger) or {}
     transformed_callback()
-    return cancel_fun
+    -- completion finished, return a function that does nothing
+    return function() end
 end
 
 --- @param context blink.cmp.Context
@@ -268,28 +312,42 @@ function GitSource:get_completions(context, callback)
         transformed_callback()
         return cancel_fun
     end
-    --- @type Job
-    local job
+    --- @type Job[]
+    local jobs = {}
     local trigger_pos = context.cursor[2] - 1
     local enabled_features = self:get_enabled_features()
     for _, feature in pairs(enabled_features) do
         local feature_triggers = utils.get_option(feature.triggers)
         if utils.truthy(feature_triggers) and vim.tbl_contains(feature_triggers, trigger) then
             local next_job = create_job_from_feature(feature, items)
-            if not job then
-                job = next_job
-            else
-                job:and_then(next_job)
+            if utils.truthy(jobs) then
+                jobs[#jobs]:after(function(code, signal)
+                    -- shutdown
+                    if signal == 9 then
+                        return
+                    end
+                    if async then
+                        next_job:start()
+                    else
+                        -- this must in a schedule
+                        vim.schedule(function() next_job:sync()end)
+                    end
+                end)
             end
+            table.insert(jobs, next_job)
         end
     end
     -- the feature for the trigger may not be enabled
-    if job == nil then
+    if not utils.truthy(jobs) then
         transformed_callback()
         return cancel_fun
     end
-    job:after(function(_, _, signal)
+    -- let the last job call the transformed_callback
+    jobs[#jobs]:after(function(_, _, signal)
         if signal == 9 then
+            vim.schedule(function()
+                callback()
+            end)
             return
         end
         if use_items_cache then
@@ -300,12 +358,16 @@ function GitSource:get_completions(context, callback)
         transformed_callback()
     end)
     if async then
-        cancel_fun = function() job:shutdown(0, 9) end
+        cancel_fun = function()
+            for _, job in pairs(jobs) do
+                job:shutdown(0, 9)
+            end
+        end
     end
     if async then
-        job:start()
+        jobs[1]:start()
     else
-        job:sync()
+        jobs[1]:sync()
     end
     return cancel_fun
 end

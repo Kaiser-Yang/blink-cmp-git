@@ -107,7 +107,7 @@ local default = {
     async = true,
     use_items_cache = true,
     -- Whether or not cache the triggers when the source is loaded
-    -- use_items_pre_cache = true,
+    use_items_pre_cache = true,
     commit = default_commit,
     git_centers = {
         github = {
