@@ -13,10 +13,6 @@ local function is_inside_git_repo()
     return res
 end
 
-local json_field_helper = function(val)
-    return tostring(val)
-end
-
 --- @type blink-cmp-git.GCSCompletionOptions
 local default_commit = {
     -- enable when current directory is inside a git repo
@@ -33,6 +29,7 @@ local default_commit = {
         local lines = vim.split(output, '\n')
         local i = 1
         local commits = {}
+        -- I've tried use regex to match the commit, but there always were some commits missing
         while i < #lines do
             local j = i + 1
             while j < #lines do
@@ -89,18 +86,18 @@ local default_github_pr_and_issue_separate_output = function(output)
     local json_res = vim.json.decode(output)
     for i = 1, #json_res do
         items[i] = {
-            label = '#' .. json_field_helper(json_res[i].number) ..
-                ' ' .. json_field_helper(json_res[i].title),
-            insert_text = '#' .. json_field_helper(json_res[i].number) .. ' ',
+            label = '#' .. tostring(json_res[i].number) ..
+                ' ' .. tostring(json_res[i].title),
+            insert_text = '#' .. tostring(json_res[i].number) .. ' ',
             documentation =
-                '#' .. json_field_helper(json_res[i].number) ..
-                ' ' .. json_field_helper(json_res[i].title) .. '\n' ..
-                'State: ' .. json_field_helper(json_res[i].state) .. '\n' ..
-                'Author: ' .. json_field_helper(json_res[i].author.login) .. '\n' ..
-                'Created at: ' .. json_field_helper(json_res[i].createdAt) .. '\n' ..
-                'Updated at: ' .. json_field_helper(json_res[i].updatedAt) .. '\n' ..
-                'Closed at: ' .. json_field_helper(json_res[i].closedAt) .. '\n' ..
-                json_field_helper(json_res[i].body)
+                '#' .. tostring(json_res[i].number) ..
+                ' ' .. tostring(json_res[i].title) .. '\n' ..
+                'State: ' .. tostring(json_res[i].state) .. '\n' ..
+                'Author: ' .. tostring(json_res[i].author.login) .. '\n' ..
+                'Created at: ' .. tostring(json_res[i].createdAt) .. '\n' ..
+                'Updated at: ' .. tostring(json_res[i].updatedAt) .. '\n' ..
+                'Closed at: ' .. tostring(json_res[i].closedAt) .. '\n' ..
+                tostring(json_res[i].body)
         }
     end
     return items
@@ -110,10 +107,11 @@ end
 local default = {
     async = true,
     use_items_cache = true,
-    should_reload_items_cache = false,
+    -- Whether or not cache the triggers when the source is loaded
+    use_items_pre_cache = true,
+    commit = default_commit,
     git_centers = {
         github = {
-            commit = default_commit,
             issue = {
                 enable = remote_contains_github,
                 triggers = { '#' },
@@ -149,25 +147,25 @@ local default = {
                     local items = {}
                     for i = 1, #json_res do
                         items[i] = {
-                            label = '@' .. json_field_helper(json_res[i].login),
-                            insert_text = '@' .. json_field_helper(json_res[i].login) .. ' ',
+                            label = '@' .. tostring(json_res[i].login),
+                            insert_text = '@' .. tostring(json_res[i].login) .. ' ',
                             documentation = {
                                 get_command = 'gh',
                                 get_command_args = {
                                     'api',
-                                    'users/' .. json_field_helper(json_res[i].login),
+                                    'users/' .. tostring(json_res[i].login),
                                 },
                                 ---@diagnostic disable-next-line: redefined-local
                                 resolve_documentation = function(output)
                                     local user_info = vim.json.decode(output)
                                     return
-                                        json_field_helper(user_info.login) ..
-                                        ' ' .. json_field_helper(user_info.name) .. '\n' ..
-                                        'Location: ' .. json_field_helper(user_info.location) .. '\n' ..
-                                        'Email: ' .. json_field_helper(user_info.email) .. '\n' ..
-                                        'Company: ' .. json_field_helper(user_info.company) .. '\n' ..
-                                        'Created at: ' .. json_field_helper(user_info.created_at) .. '\n' ..
-                                        'Updated at: ' .. json_field_helper(user_info.updated_at) .. '\n'
+                                        tostring(user_info.login) ..
+                                        ' ' .. tostring(user_info.name) .. '\n' ..
+                                        'Location: ' .. tostring(user_info.location) .. '\n' ..
+                                        'Email: ' .. tostring(user_info.email) .. '\n' ..
+                                        'Company: ' .. tostring(user_info.company) .. '\n' ..
+                                        'Created at: ' .. tostring(user_info.created_at) .. '\n' ..
+                                        'Updated at: ' .. tostring(user_info.updated_at) .. '\n'
                                 end
                             }
                         }
