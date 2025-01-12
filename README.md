@@ -2,7 +2,7 @@
 
 Git source for [blink.cmp](https://github.com/Saghen/blink.cmp)
 completion plugin. This makes it possible to query pull requests, issues,
-and users from GitHub. This is very useful when you are writing a commit with `nvime`.
+and users from GitHub. This is very useful when you are writing a commit with `nvim`.
 
 Use `#` to search for issues and pull requests:
 
