@@ -29,6 +29,7 @@ local default_commit = {
         local lines = vim.split(output, '\n')
         local i = 1
         local commits = {}
+        -- I've tried use regex to match the commit, but there always were some commits missing
         while i < #lines do
             local j = i + 1
             while j < #lines do

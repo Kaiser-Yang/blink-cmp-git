@@ -43,106 +43,179 @@ Add the plugin to your packer managers, and make sure it is loaded before `blink
             -- add 'git' to the list
             default = { 'git', 'dictionary', 'lsp', 'path', 'luasnip', 'buffer' },
             git = {
-                -- Because we use filetype to enable the source,
-                -- we can make the score higher
-                score_offset = 100,
-                module = 'blink-cmp-git',
-                name = 'Git',
-                enabled = function()
-                    -- enable the source when the filetype is gitcommit or markdown
-                    return vim.o.filetype == 'gitcommit' or vim.o.filetype == 'markdown'
-                end,
-                --- @module 'blink-cmp-git'
-                --- @type blink-cmp-git.Options
                 opts = {
-                    -- some options for the blink-cmp-git
-                }
+                    -- options for the blink-cmp-git
+                },
             },
         }
     }
 }
 ```
 
-## Configuration
-
-There are some important options you may be interested in:
+## Quick Start
 
 ```lua
-{
-    --NOTE: because `gh` will get the result through the network, it may be slow.
-    -- To use `async = true` and `use_items_cache = true` is recommended.
-
-    -- Whether or not to run asynchronously
-    async = true,
-    -- whether or not to cache the items
-    use_items_cache = true,
-    -- When to reload the items cache
-    should_reload_items_cache = false, -- or use a function
-    git_centers = {
-        -- For repositories whose centers are git hub, the name can be anything you want
-        github = {
-            mention = {
-                -- When to enable the feature, by default,
-                -- it is enabled when the `vim.fn.getcwd()` is a git repository
-                -- whose remote contains `github.com`
-                enable = remote_contains_github,
-                -- After input `@`, the source will get the users from the repository
-                triggers = { '@' },
-                -- Command for getting the users
-                get_command = 'gh',
-                get_command_args = {
-                    'api',
-                    'repos/:owner/:repo/contributors',
-                },
-                -- The standard output will be parsed to this function
-                -- This function must return a list of items
-                separate_output = function(output)
-                    local json_res = vim.json.decode(output)
-                    local items = {}
-                    for i = 1, #json_res do
-                        items[i] = {
-                            label = '@' .. json_field_helper(json_res[i].login),
-                            insert_text = '@' .. json_field_helper(json_res[i].login),
-                            -- For the documentation, you can use a string directly,
-                            -- or return a `DocumentationCommand` defined in `types.lua` 
-                            -- to get the documentation asynchronously
-                            documentation = {
-                                -- The command for getting the documentation
-                                get_command = 'gh',
-                                get_command_args = {
-                                    'api',
-                                    'users/' .. json_field_helper(json_res[i].login),
-                                },
-                                -- The output of the command will be parsed to this function
-                                resolve_documentation = function(output)
-                                    local user_info = vim.json.decode(output)
-                                    return
-                                        json_field_helper(user_info.login) ..
-                                        ' ' .. json_field_helper(user_info.name) .. '\n' ..
-                                        'Location: ' .. json_field_helper(user_info.location) .. '\n' ..
-                                        'Email: ' .. json_field_helper(user_info.email) .. '\n' ..
-                                        'Company: ' .. json_field_helper(user_info.company) .. '\n' ..
-                                        'Created at: ' .. json_field_helper(user_info.created_at) .. '\n' ..
-                                        'Updated at: ' .. json_field_helper(user_info.updated_at) .. '\n'
-                                end
-                            }
-                        }
-                    end
-                    return items
-                end,
-            },
-            -- ... Other features
-        },
+git = {
+    -- Because we use filetype to decide whether or not to show the items,
+    -- we can make the score higher
+    score_offset = 100,
+    module = 'blink-cmp-git',
+    name = 'Git',
+    -- enabled this source at the beginning to make it possible to pre-cache
+    -- at very beginning
+    enabled = true,
+    -- only show this source when filetype is gitcommit or markdown
+    should_show_items = function()
+        return vim.o.filetype == 'gitcommit' or vim.o.filetype == 'markdown'
+    end,
+    --- @module 'blink-cmp-git'
+    --- @type blink-cmp-git.Options
+    opts = {
+        commit = {
+            -- You may want to custom when it should be enabled
+            -- The default will enable this when `cwd` is in a git repository
+            -- enable = function() end
+            -- You may want to change the triggers
+            -- triggers = { ':' },
+        }
+        git_centers = {
+            git_hub = {
+                -- Those below have the same fields with `commit`
+                -- issues = {
+                -- },
+                -- pull_request = {
+                -- },
+                -- mention = {
+                -- }
+            }
+        }
     }
+},
 ```
 
-Actually, `blink-cmp-git` can be used for any git centers, not just GitHub.
-You can add more centers to the `git_centers` table. May in the future, I will add more centers,
-such as `Git Lab` or `Gitee`.
+The configuration above will enable the `blink-cmp-git` for `blink.cmp` and show the items
+when the filetype is `gitcommit` or `markdown`. By default, `blink-cmp-git` will pre-cache
+everything when it is created. To enable `blink-cmp-git` all the time makes it possible to
+pre-cache when you enter insert mode or other mode you can input
+(`blink.cmp` will create sources when you can input something).
 
-See [default.lua](./lua/blink-cmp-git/default.lua) for the default configuration.
+## Reload Cache
 
-To see how I configured: [blink-cmp-git](https://github.com/Kaiser-Yang/dotfiles/blob/main/.config/nvim/lua/plugins/blink_cmp.lua).
+There are many cases will make the cache out of date. For example,
+if your `cwd` is in a repository, later you switch your `cwd` to another repository, the cache
+will use the first repository's result. To solve this problem, there is a command to
+reload the cache: `BlinkCmpGitReloadCache`. This command will clear all the cache and if
+`use_items_pre_cache` is enabled (default to `true`), it will pre-cache again.
+
+You can bind the command to a key or create a vim autocommand to reload the cache when your
+`cwd` changes.
+
+> [!NOTE]
+>
+> The command will be available only when the `blink-cmp-git` source is created. Usually,
+> the source will be created when it is enabled and you are in some mode you can input.
+
+## Default Configuration
+
+See [default.lua](./lua/blink-cmp-git/default.lua).
+
+## FAQs
+
+### How to custom the completion items?
+
+Because all features have same fields, I'll use `commit` as an example.
+
+The `blink-cmp-git` will first run command from `get_command` and `get_command_args`. The standout
+of the command will be passed to `separate_output`. So if you want to custom the completion items,
+you should be aware of what the output of your command looks like.
+
+The default `get_command` and `get_command_args` for `commit`:
+
+```lua
+get_command = 'git',
+get_command_args = {
+    '--no-pager',
+    'log',
+    '--pretty=fuller',
+    '--decorate=no',
+},
+```
+
+This will give you the output like:
+
+```gitcommit
+commit 0216336d8ff00d7b8c9304b23bcca31cbfcdf2c8
+Author:     Kaiser-Yang <624626089@qq.com>
+AuthorDate: Sun Jan 12 14:40:38 2025 +0800
+Commit:     Kaiser-Yang <624626089@qq.com>
+CommitDate: Sun Jan 12 14:43:15 2025 +0800
+
+    Cache empty documentations
+
+commit 90e2fd0f5ae6e4de00eab63f5cb99f850e0ffa56
+Author:     Kaiser-Yang <624626089@qq.com>
+AuthorDate: Sun Jan 12 14:27:39 2025 +0800
+Commit:     Kaiser-Yang <624626089@qq.com>
+CommitDate: Sun Jan 12 14:27:39 2025 +0800
+
+    Improve the experience of pre cache
+...
+```
+
+The default `separate_output` for `commit`:
+
+```lua
+separate_output = function(output)
+    local lines = vim.split(output, '\n')
+    local i = 1
+    local commits = {}
+    -- Those below separate the output to a list of commits
+    -- I've tried use regex to match the commit, but there always were missing some commits
+    while i < #lines do
+        local j = i + 1
+        while j < #lines do
+            if lines[j]:match('^commit ') then
+                j = j - 1
+                break
+            end
+            j = j + 1
+        end
+        commits[#commits + 1] = table.concat(lines, '\n', i, j)
+        i = j + 1
+    end
+    local items = {}
+    ---@diagnostic disable-next-line: redefined-local
+    for i = 1, #commits do
+        --- @type string
+        local commit = commits[i]
+        items[i] = {
+            -- label is what to show in the completion menu
+            -- the fist 7 characters of the hash and the subject of the commit
+            label =
+                commit:match('commit ([^\n]*)'):sub(1, 7)
+                ..
+                ' '
+                ..
+                commit:match('\n\n%s*([^\n]*)'),
+            -- insert_text is what to insert when you select or accept the item
+            insert_text = commit:match('^commit ([^\n]*)'):sub(1, 7) .. ' ',
+            -- this can be a `DocumentationCommand` or a string
+            -- set this to nil if you don't want to show the documentation
+            -- use the whole commit as the documentation
+            documentation = commit
+            -- documentation = {
+            --     -- the command to get the documentation
+            --     get_command = '',
+            --     get_command_args = {}
+            --     -- how to resolve the output
+            --     resolve_documentation = function(output) return output end
+            -- }
+            -- documentation = nil
+        }
+    end
+    return items
+end,
+```
 
 ## Performance
 
@@ -150,7 +223,8 @@ Once `async` is enabled, the completion will has no effect to your other operati
 How long it will take to show results depends on the network speed and the response time
 of the git center. But, don't worries, once you enable `use_items_cache`, the items will be
 cached when you first trigger the completion by inputting `@`, `#`, or `:`
-(You can DIY the triggers). For the documentation of `mention` feature,
+(You can DIY the triggers). Furthermore, once you enable `use_items_pre_cache`, when the
+source is created, it will pre-cache all the items. For the documentation of `mention` feature,
 it will be cached when you hover on one item.
 
 ## Version Introduction
