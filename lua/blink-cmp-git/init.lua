@@ -22,24 +22,6 @@ local function create_job_from_documentation_command(documentation_command)
     })
 end
 
---- @param git_source_config blink-cmp-git.Options
---- @return blink-cmp-git.GCSCompletionOptions[]
-local function get_enabled_features(git_source_config)
-    local result = {}
-    for _, git_center in pairs(vim.tbl_values(git_source_config.git_centers)) do
-        for _, feature in pairs(git_center) do
-            if utils.get_option(feature.enable) then
-                table.insert(result, feature)
-            end
-        end
-    end
-    local commit = git_source_config.commit
-    if commit and utils.get_option(commit.enable) then
-        table.insert(result, commit)
-    end
-    return result
-end
-
 --- @param context blink.cmp.Context
 --- @return lsp.TextEdit
 local function get_text_edit_range(context)
@@ -109,14 +91,7 @@ end
 
 function GitSource:create_pre_cache_jobs()
     self.pre_cache_jobs = {}
-    --- @type table<string, {items: table, job: Job}>
-    local features = { self.git_source_config.commit }
-    for _, git_center in pairs(self.git_source_config.git_centers) do
-        for _, feature in pairs(git_center) do
-            table.insert(features, feature)
-        end
-    end
-    for _, feature in pairs(features) do
+    for _, feature in pairs(self:get_enabled_features()) do
         for _, trigger in pairs(utils.get_option(feature.triggers)) do
             if self.pre_cache_jobs[trigger] then
                 self.pre_cache_jobs[trigger].job:and_then(create_job_from_feature(feature,
@@ -165,11 +140,19 @@ function GitSource.new(opts, _)
     local self = setmetatable({}, { __index = GitSource })
     self.git_source_config = vim.tbl_deep_extend("force", default, opts or {})
     self.cache = require('blink-cmp-git.cache').new()
-    if utils.get_option(self.git_source_config.use_items_cache) and
-        utils.get_option(self.git_source_config.use_items_pre_cache) then
+    local use_items_pre_cache = utils.get_option(self.git_source_config.use_items_pre_cache)
+    if use_items_pre_cache then
         self:create_pre_cache_jobs()
         self:run_pre_cache_jobs()
     end
+    vim.api.nvim_create_user_command('BlinkCmpGitReloadCache', function()
+        self.cache:clear()
+        if use_items_pre_cache then
+            self:shutdown_pre_cache_jobs()
+            self:create_pre_cache_jobs()
+            self:run_pre_cache_jobs()
+        end
+    end, { nargs = 0 })
     return self
 end
 
@@ -210,25 +193,6 @@ function GitSource:handle_items_pre_cache(context, callback)
                 items = vim.tbl_values(items)
             })
         end)
-    end
-    if utils.get_option(self.git_source_config.should_reload_items_cache) then
-        self.cache:clear()
-        self:shutdown_pre_cache_jobs()
-        for _, job_and_items in pairs(self.pre_cache_jobs) do
-            job_and_items.job:after(function(j, _, signal)
-                -- HACK: there may be a elegant way to do this
-                -- Remove this callback to avoid running it again
-                -- Make sure this callback is the last one
-                table.remove(j._additional_on_exit_callbacks)
-                if signal == 9 then
-                    return
-                end
-                items = self.cache:get(trigger) or {}
-                transformed_callback()
-            end)
-        end
-        self:run_pre_cache_jobs()
-        return function() end
     end
     local job_and_items = self.pre_cache_jobs[trigger]
     local cancel_fun = function() job_and_items.job:shutdown(0, 9) end
@@ -294,10 +258,6 @@ function GitSource:get_completions(context, callback)
     cancel_fun = function() end
     local async = utils.get_option(self.git_source_config.async)
     local use_items_cache = utils.get_option(self.git_source_config.use_items_cache)
-    local should_reload_items_cache = utils.get_option(self.git_source_config.should_reload_items_cache)
-    if should_reload_items_cache then
-        self.cache:clear()
-    end
     local cached_items
     if use_items_cache then
         ---@diagnostic disable-next-line: param-type-mismatch
@@ -311,7 +271,7 @@ function GitSource:get_completions(context, callback)
     --- @type Job
     local job
     local trigger_pos = context.cursor[2] - 1
-    local enabled_features = get_enabled_features(self.git_source_config)
+    local enabled_features = self:get_enabled_features()
     for _, feature in pairs(enabled_features) do
         local feature_triggers = utils.get_option(feature.triggers)
         if utils.truthy(feature_triggers) and vim.tbl_contains(feature_triggers, trigger) then
@@ -413,6 +373,23 @@ function GitSource:resolve(item, callback)
     else
         job:sync()
     end
+end
+
+--- @return blink-cmp-git.GCSCompletionOptions[]
+function GitSource:get_enabled_features()
+    local result = {}
+    for _, git_center in pairs(vim.tbl_values(self.git_source_config.git_centers)) do
+        for _, feature in pairs(git_center) do
+            if utils.get_option(feature.enable) then
+                table.insert(result, feature)
+            end
+        end
+    end
+    local commit = self.git_source_config.commit
+    if commit and utils.get_option(commit.enable) then
+        table.insert(result, commit)
+    end
+    return result
 end
 
 -- TODO: add highlight
