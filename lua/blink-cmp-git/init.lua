@@ -112,7 +112,7 @@ function GitSource:create_pre_cache_jobs()
                         next_job:start()
                     else
                         -- this must in a schedule
-                        vim.schedule(function() next_job:sync()end)
+                        vim.schedule(function() next_job:sync() end)
                     end
                 end)
             end
@@ -330,7 +330,7 @@ function GitSource:get_completions(context, callback)
                         next_job:start()
                     else
                         -- this must in a schedule
-                        vim.schedule(function() next_job:sync()end)
+                        vim.schedule(function() next_job:sync() end)
                     end
                 end)
             end
@@ -404,7 +404,8 @@ function GitSource:resolve(item, callback)
     end
     if type(item.documentation) == 'string' or not item.documentation then
         if use_items_cache then
-            self.cache:set({ trigger, item.label, 'documentation' }, item.documentation)
+            -- cache empty string
+            self.cache:set({ trigger, item.label, 'documentation' }, item.documentation or '')
         end
         if item.documentation == '' then
             item.documentation = nil
@@ -422,11 +423,12 @@ function GitSource:resolve(item, callback)
             item.documentation =
             ---@diagnostic disable-next-line: undefined-field
                 item.documentation.resolve_documentation(table.concat(job:result(), '\n'))
-            if use_items_cache then
-                self.cache:set({ trigger, item.label, 'documentation' }, item.documentation)
-            end
         else
             item.documentation = nil
+        end
+        if use_items_cache then
+            -- cache empty string
+            self.cache:set({ trigger, item.label, 'documentation' }, item.documentation or '')
         end
         transformed_callback()
     end)
