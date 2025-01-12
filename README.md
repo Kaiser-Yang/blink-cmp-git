@@ -20,8 +20,6 @@ Use `@` to search for users:
 
 `gh` is required for the default configuration.
 
-[nvim-lua/plenary.nvim](https://github.com/nvim-lua/plenary.nvim) is required.
-
 ## Installation
 
 Add the plugin to your packer managers, and make sure it is loaded before `blink.cmp`.
