@@ -212,6 +212,10 @@ function GitSource:handle_items_pre_cache(context, callback)
         end)
     end
     local job_and_items = self.pre_cache_jobs[trigger]
+    -- no enabled features
+    if not job_and_items then
+        return function() end
+    end
     local cancel_fun = function()
         for _, job in pairs(job_and_items.jobs) do
             job:shutdown(0, 9)
