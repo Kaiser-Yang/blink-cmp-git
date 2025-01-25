@@ -70,7 +70,7 @@ git = {
     --- @type blink-cmp-git.Options
     opts = {
         commit = {
-            -- You may want to custom when it should be enabled
+            -- You may want to customize when it should be enabled
             -- The default will enable this when `cwd` is in a git repository
             -- enable = function() end
             -- You may want to change the triggers
@@ -119,12 +119,12 @@ See [default.lua](./lua/blink-cmp-git/default.lua).
 
 ## FAQs
 
-### How to custom the completion items?
+### How to customize the completion items?
 
 Because all features have same fields, I'll use `commit` as an example.
 
 The `blink-cmp-git` will first run command from `get_command` and `get_command_args`. The standout
-of the command will be passed to `separate_output`. So if you want to custom the completion items,
+of the command will be passed to `separate_output`. So if you want to customize the completion items,
 you should be aware of what the output of your command looks like.
 
 The default `get_command` and `get_command_args` for `commit`:
@@ -213,6 +213,26 @@ separate_output = function(output)
     end
     return items
 end,
+```
+
+### How to customize the error message?
+
+From the version `v0.2.0`, there is a configuration `on_error` for all the `GCSCompletionOptions`.
+`on_error` is a function like `func(return_value: number, standard_error: string): boolean`.
+
+When `blink-cmp-git` find a non-zero return value or a non-empty standard error, it will call
+`on_error` with the return value and the standard error. If `on_error` returns `false`, the error
+will be ignored, which means `blink-cmp-git` will go on to the next step. When `on_error` returns
+`true`, `blink-cmp-git` will not go on to the next step. The default `on_error` is to show the
+error message and return `true`.
+
+For example, if you want to disable the error message for `commit`,
+you just need to use those below:
+
+```lua
+commit = {
+    on_error = function(_, _) return true end
+}
 ```
 
 ## Performance
