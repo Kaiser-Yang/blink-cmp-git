@@ -1,4 +1,6 @@
 local Job = require('plenary.job')
+local log = require('blink-cmp-git.log')
+log.setup({ title = 'blink-cmp-git' })
 
 local function is_inside_git_repo()
     local res = false
@@ -11,6 +13,15 @@ local function is_inside_git_repo()
         end
     }):sync()
     return res
+end
+
+local default_on_error = function(return_value, standard_error)
+    log.error('get_completions failed',
+        '\n',
+        'with error code:', return_value,
+        '\n',
+        'stderr:', standard_error)
+    return true
 end
 
 --- @type blink-cmp-git.GCSCompletionOptions
@@ -61,6 +72,7 @@ local default_commit = {
         end
         return items
     end,
+    on_error = default_on_error,
 }
 
 -- check if the git repo is hosted on GitHub
@@ -122,6 +134,7 @@ local default = {
                     '--json', 'number,title,state,body,createdAt,updatedAt,closedAt,author',
                 },
                 separate_output = default_github_pr_and_issue_separate_output,
+                on_error = default_on_error,
             },
             pull_request = {
                 enable = remote_contains_github,
@@ -133,6 +146,7 @@ local default = {
                     '--json', 'number,title,state,body,createdAt,updatedAt,closedAt,author',
                 },
                 separate_output = default_github_pr_and_issue_separate_output,
+                on_error = default_on_error,
             },
             mention = {
                 enable = remote_contains_github,
@@ -172,6 +186,7 @@ local default = {
                     end
                     return items
                 end,
+                on_error = default_on_error,
             },
         },
         -- TODO: this will be implemented in the future

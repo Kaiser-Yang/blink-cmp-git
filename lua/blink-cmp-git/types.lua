@@ -14,6 +14,7 @@
 --- @field get_command? string|fun(): string
 --- @field get_command_args? string[]|fun(): string[]
 --- @field separate_output? fun(output: string): blink-cmp-git.CompletionItem[]
+--- @field on_error? fun(return_value: number, standard_error: string): boolean
 
 --- @class (exact) blink-cmp-git.GCSOptions
 --- @field issue? blink-cmp-git.GCSCompletionOptions

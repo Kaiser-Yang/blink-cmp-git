@@ -3,8 +3,8 @@
 
 local default = require('blink-cmp-git.default')
 local utils = require('blink-cmp-git.utils')
-local log = require('blink-cmp-git.log')
 local Job = require('plenary.job')
+local log = require('blink-cmp-git.log')
 log.setup({ title = 'blink-cmp-git' })
 
 --- @class blink.cmp.Source
@@ -51,15 +51,10 @@ local function create_job_from_feature(feature, items)
             if signal == 9 then
                 return
             end
-            if return_value ~= 0 and utils.truthy(j:stderr_result()) then
-                log.error('command failed:', cmd,
-                    '\n',
-                    'cmd_args:', cmd_args,
-                    '\n',
-                    'with error code:', return_value,
-                    '\n',
-                    'stderr:', j:stderr_result())
-                return
+            if return_value ~= 0 or utils.truthy(j:stderr_result()) then
+                if feature.on_error(return_value, table.concat(j:stderr_result(), '\n')) then
+                    return
+                end
             end
             if utils.truthy(j:result()) then
                 local match_list = utils.get_option(feature.separate_output,
