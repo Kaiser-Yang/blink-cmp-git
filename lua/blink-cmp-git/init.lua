@@ -290,7 +290,7 @@ function GitSource:get_completions(context, callback)
         end)
     end
     ---@diagnostic disable-next-line: param-type-mismatch
-    if not self:should_show_completions(context, nil) then
+    if not self:should_show_items(context, nil) then
         transformed_callback()
         return function() end
     end
@@ -371,9 +371,8 @@ function GitSource:get_completions(context, callback)
     return cancel_fun
 end
 
--- HACK: the blink.cmp does not call this function
 --- @param context blink.cmp.Context
-function GitSource:should_show_completions(context, _)
+function GitSource:should_show_items(context, _)
     return context.trigger.initial_kind == 'trigger_character' and context.mode ~= 'cmdline'
         and vim.tbl_contains(self:get_trigger_characters(), context.trigger.initial_character)
 end
