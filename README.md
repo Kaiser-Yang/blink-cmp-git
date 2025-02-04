@@ -41,6 +41,8 @@ Add the plugin to your packer managers, and make sure it is loaded before `blink
             -- add 'git' to the list
             default = { 'git', 'dictionary', 'lsp', 'path', 'luasnip', 'buffer' },
             git = {
+                module = 'blink-cmp-git',
+                name = 'Git',
                 opts = {
                     -- options for the blink-cmp-git
                 },
@@ -54,11 +56,11 @@ Add the plugin to your packer managers, and make sure it is loaded before `blink
 
 ```lua
 git = {
+    module = 'blink-cmp-git',
+    name = 'Git',
     -- Because we use filetype to decide whether or not to show the items,
     -- we can make the score higher
     score_offset = 100,
-    module = 'blink-cmp-git',
-    name = 'Git',
     -- enabled this source at the beginning to make it possible to pre-cache
     -- at very beginning
     enabled = true,
