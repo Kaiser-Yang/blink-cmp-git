@@ -190,7 +190,7 @@ separate_output = function(output)
         local commit = commits[i]
         items[i] = {
             -- label is what to show in the completion menu
-            -- the fist 7 characters of the hash and the subject of the commit
+            -- the first 7 characters of the hash and the subject of the commit
             label =
                 commit:match('commit ([^\n]*)'):sub(1, 7)
                 ..
