@@ -40,13 +40,15 @@ Add the plugin to your packer managers, and make sure it is loaded before `blink
         sources = {
             -- add 'git' to the list
             default = { 'git', 'dictionary', 'lsp', 'path', 'luasnip', 'buffer' },
-            git = {
-                module = 'blink-cmp-git',
-                name = 'Git',
-                opts = {
-                    -- options for the blink-cmp-git
+            providers = {
+                git = {
+                    module = 'blink-cmp-git',
+                    name = 'Git',
+                    opts = {
+                        -- options for the blink-cmp-git
+                    },
                 },
-            },
+            }
         }
     }
 }
