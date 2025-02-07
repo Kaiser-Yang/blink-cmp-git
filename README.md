@@ -119,6 +119,13 @@ You can bind the command to a key or create a vim autocommand to reload the cach
 > The command will be available only when the `blink-cmp-git` source is created. Usually,
 > the source will be created when it is enabled and you are in some mode you can input.
 
+> [!NOTE]
+>
+> Since `v0.3.0`, `blink-cmp-git` will create a auto command which uses
+> `should_reload_cache` to determine whether or not to reload cache when entering a buffer.
+> The default `should_reload_cache` will return `true` when `cwd` changed to another
+> `git` repository.
+
 ## Default Configuration
 
 See [default.lua](./lua/blink-cmp-git/default.lua).
