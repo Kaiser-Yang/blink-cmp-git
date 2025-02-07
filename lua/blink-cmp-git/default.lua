@@ -47,11 +47,13 @@ local function default_commit_enable()
 end
 
 local default_on_error = function(return_value, standard_error)
-    log.error('get_completions failed',
-        '\n',
-        'with error code:', return_value,
-        '\n',
-        'stderr:', standard_error)
+    vim.schedule(function()
+        log.error('get_completions failed',
+            '\n',
+            'with error code:', return_value,
+            '\n',
+            'stderr:', standard_error)
+    end)
     return true
 end
 
