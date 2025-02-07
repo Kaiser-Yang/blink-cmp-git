@@ -138,6 +138,30 @@ local function default_github_enable()
     return output:find('github.com') ~= nil
 end
 
+local function default_github_pr_or_issue_separate_output(output, is_pr)
+    --- @type blink-cmp-git.CompletionItem[]
+    local items = {}
+    local json_res = vim.json.decode(output)
+    for i = 1, #json_res do
+        items[i] = {
+            label = '#' .. tostring(json_res[i].number) ..
+                ' ' .. tostring(json_res[i].title),
+            insert_text = '#' .. tostring(json_res[i].number),
+            kind_name = is_pr and 'PR' or 'Issue',
+            documentation =
+                '#' .. tostring(json_res[i].number) ..
+                ' ' .. tostring(json_res[i].title) .. '\n' ..
+                'State: ' .. tostring(json_res[i].state) .. '\n' ..
+                'Author: ' .. tostring(json_res[i].author.login) .. '\n' ..
+                'Created at: ' .. tostring(json_res[i].createdAt) .. '\n' ..
+                'Updated at: ' .. tostring(json_res[i].updatedAt) .. '\n' ..
+                'Closed at: ' .. tostring(json_res[i].closedAt) .. '\n' ..
+                tostring(json_res[i].body)
+        }
+    end
+    return items
+end
+
 --- @type blink-cmp-git.Options
 local default = {
     async = true,
@@ -165,27 +189,7 @@ local default = {
                 },
                 insert_text_trailing = ' ',
                 separate_output = function(output)
-                    --- @type blink-cmp-git.CompletionItem[]
-                    local items = {}
-                    local json_res = vim.json.decode(output)
-                    for i = 1, #json_res do
-                        items[i] = {
-                            label = '#' .. tostring(json_res[i].number) ..
-                                ' ' .. tostring(json_res[i].title),
-                            insert_text = '#' .. tostring(json_res[i].number),
-                            kind_name = 'Issue',
-                            documentation =
-                                '#' .. tostring(json_res[i].number) ..
-                                ' ' .. tostring(json_res[i].title) .. '\n' ..
-                                'State: ' .. tostring(json_res[i].state) .. '\n' ..
-                                'Author: ' .. tostring(json_res[i].author.login) .. '\n' ..
-                                'Created at: ' .. tostring(json_res[i].createdAt) .. '\n' ..
-                                'Updated at: ' .. tostring(json_res[i].updatedAt) .. '\n' ..
-                                'Closed at: ' .. tostring(json_res[i].closedAt) .. '\n' ..
-                                tostring(json_res[i].body)
-                        }
-                    end
-                    return items
+                    return default_github_pr_or_issue_separate_output(output, false)
                 end,
                 on_error = default_on_error,
             },
@@ -200,27 +204,7 @@ local default = {
                 },
                 insert_text_trailing = ' ',
                 separate_output = function(output)
-                    --- @type blink-cmp-git.CompletionItem[]
-                    local items = {}
-                    local json_res = vim.json.decode(output)
-                    for i = 1, #json_res do
-                        items[i] = {
-                            label = '#' .. tostring(json_res[i].number) ..
-                                ' ' .. tostring(json_res[i].title),
-                            insert_text = '#' .. tostring(json_res[i].number),
-                            kind_name = 'PR',
-                            documentation =
-                                '#' .. tostring(json_res[i].number) ..
-                                ' ' .. tostring(json_res[i].title) .. '\n' ..
-                                'State: ' .. tostring(json_res[i].state) .. '\n' ..
-                                'Author: ' .. tostring(json_res[i].author.login) .. '\n' ..
-                                'Created at: ' .. tostring(json_res[i].createdAt) .. '\n' ..
-                                'Updated at: ' .. tostring(json_res[i].updatedAt) .. '\n' ..
-                                'Closed at: ' .. tostring(json_res[i].closedAt) .. '\n' ..
-                                tostring(json_res[i].body)
-                        }
-                    end
-                    return items
+                    return default_github_pr_or_issue_separate_output(output, true)
                 end,
                 on_error = default_on_error,
             },
