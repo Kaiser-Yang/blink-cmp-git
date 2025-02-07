@@ -322,7 +322,6 @@ git_centers = {
                         documentation =
                             '#' .. tostring(json_res[i].number) ..
                             ' ' .. tostring(json_res[i].title) .. '\n' ..
-                             -- Filter by state: {open|closed|merged|all} (default "open")
                             'State: ' .. tostring(json_res[i].state) .. '\n' ..
                             'Author: ' .. tostring(json_res[i].author.login) .. '\n' ..
                             'Created at: ' .. tostring(json_res[i].createdAt) .. '\n' ..
