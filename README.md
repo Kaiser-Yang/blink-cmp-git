@@ -261,6 +261,94 @@ commit = {
 }
 ```
 
+### How to customize the highlight?
+
+Since `v0.3.0`, the completion items' kind will be determined by the `kind_name` field from the
+`separate_output` function. From the documentation of `blink.cmp`, `BlinkCmpKind<kind_name>` is
+available for you to customize the highlight. By default, `blink-cmp-git` will use the
+`BlinkCmpKind` for all the kinds. If you want to customize the highlight for `commit`, you can use
+those below:
+
+```lua
+-- Commit is from the `separate_output` function
+-- The `kind_name` for default `separate_output` are `Commit`, `Issue`, `PR`.
+-- If you customize the `separate_output`, you should update `Commit` with your `kind_name`
+vim.api.nvim_set_hl(0, 'BlinkCmpKind' .. 'Commit', { default = false, bg = 'red' })
+```
+
+### How to customize different icons for open, closed, and merged pull requests or issues?
+
+I'll give you the example for pull requests. You can do the same for issues.
+
+Firstly, you should update the `get_command_args` to get all states of the pull requests or issues:
+
+```lua
+git_centers = {
+    github = {
+        pull_request = {
+                get_command_args = {
+                    'pr',
+                    'list',
+                    '--state', 'all', -- get all pull requests
+                    '--json', 'number,title,state,body,createdAt,updatedAt,closedAt,author',
+                },
+            },
+        }
+    }
+}
+```
+
+Secondly, you should update the `separate_output` to customize the `kind_name`:
+
+```lua
+git_centers = {
+    github = {
+        pull_request = {
+            separate_output = function(output)
+                --- @type blink-cmp-git.CompletionItem[]
+                local items = {}
+                local json_res = vim.json.decode(output)
+                for i = 1, #json_res do
+                    items[i] = {
+                        label = '#' .. tostring(json_res[i].number) ..
+                            ' ' .. tostring(json_res[i].title),
+                        insert_text = '#' .. tostring(json_res[i].number),
+                        -- PROPEN
+                        -- PRCLOSED
+                        -- PRMERGED
+                        kind_name = 'PR' .. tostring(json_res[i].state),
+                        documentation =
+                            '#' .. tostring(json_res[i].number) ..
+                            ' ' .. tostring(json_res[i].title) .. '\n' ..
+                             -- Filter by state: {open|closed|merged|all} (default "open")
+                            'State: ' .. tostring(json_res[i].state) .. '\n' ..
+                            'Author: ' .. tostring(json_res[i].author.login) .. '\n' ..
+                            'Created at: ' .. tostring(json_res[i].createdAt) .. '\n' ..
+                            'Updated at: ' .. tostring(json_res[i].updatedAt) .. '\n' ..
+                            'Closed at: ' .. tostring(json_res[i].closedAt) .. '\n' ..
+                            tostring(json_res[i].body)
+                    }
+                end
+                return items
+            end,
+        }
+    }
+}
+```
+
+At last, you should update the icon for the `kind_name`:
+
+```lua
+kind_icons = {
+    PROPEN = '',
+    PRCLOSED = '',
+    PRMERGED = '',
+}
+```
+
+You may need to update the highlight for the `kind_name`,
+see [How to customize the highlight?](#how-to-customize-the-highlight).
+
 ## Performance
 
 Once `async` is enabled, the completion will has no effect to your other operations.
