@@ -73,7 +73,7 @@ git = {
     opts = {
         commit = {
             -- You may want to customize when it should be enabled
-            -- The default will enable this when `cwd` is in a git repository
+            -- The default will enable this when `git` is found and `cwd` is in a git repository
             -- enable = function() end
             -- You may want to change the triggers
             -- triggers = { ':' },
@@ -81,6 +81,8 @@ git = {
         git_centers = {
             github = {
                 -- Those below have the same fields with `commit`
+                -- Those features will be enabled when `git` and `gh` are found and
+                -- remote contains `github.com`
                 -- issue = {
                 -- },
                 -- pull_request = {
