@@ -13,6 +13,7 @@
 --- @field triggers? string[]|fun(): string[]
 --- @field get_command? string|fun(): string
 --- @field get_command_args? string[]|fun(): string[]
+--- @field insert_text_trailing? string|fun(): string
 --- @field separate_output? fun(output: string): blink-cmp-git.CompletionItem[]
 --- @field on_error? fun(return_value: number, standard_error: string): boolean
 
