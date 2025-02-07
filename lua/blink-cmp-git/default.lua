@@ -2,9 +2,10 @@ local Job = require('plenary.job')
 local log = require('blink-cmp-git.log')
 log.setup({ title = 'blink-cmp-git' })
 
-local function is_inside_git_repo()
+local function default_commit_enable()
+    if vim.fn.executable('git') == 0 then return false end
     local res = false
----@diagnostic disable-next-line: missing-fields
+    ---@diagnostic disable-next-line: missing-fields
     Job:new({
         command = 'git',
         args = { 'rev-parse', '--is-inside-work-tree' },
@@ -28,7 +29,7 @@ end
 --- @type blink-cmp-git.GCSCompletionOptions
 local default_commit = {
     -- enable when current directory is inside a git repo
-    enable = is_inside_git_repo,
+    enable = default_commit_enable,
     triggers = { ':' },
     get_command = 'git',
     get_command_args = {
@@ -76,10 +77,10 @@ local default_commit = {
     on_error = default_on_error,
 }
 
--- check if the git repo is hosted on GitHub
-local function remote_contains_github()
+local function default_github_enable()
+    if vim.fn.executable('git') == 0 or vim.fn.executable('gh') == 0 then return false end
     local output = ''
----@diagnostic disable-next-line: missing-fields
+    ---@diagnostic disable-next-line: missing-fields
     Job:new({
         command = 'git',
         args = { 'remote', '-v' },
@@ -127,7 +128,7 @@ local default = {
     git_centers = {
         github = {
             issue = {
-                enable = remote_contains_github,
+                enable = default_github_enable,
                 triggers = { '#' },
                 get_command = 'gh',
                 get_command_args = {
@@ -139,7 +140,7 @@ local default = {
                 on_error = default_on_error,
             },
             pull_request = {
-                enable = remote_contains_github,
+                enable = default_github_enable,
                 triggers = { '#' },
                 get_command = 'gh',
                 get_command_args = {
@@ -151,7 +152,7 @@ local default = {
                 on_error = default_on_error,
             },
             mention = {
-                enable = remote_contains_github,
+                enable = default_github_enable,
                 triggers = { '@' },
                 get_command = 'gh',
                 get_command_args = {
