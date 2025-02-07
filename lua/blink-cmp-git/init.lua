@@ -68,7 +68,10 @@ local function create_job_from_feature(feature, items)
                         label = match.label,
                         kind = require('blink.cmp.types').CompletionItemKind.Text,
                         textEdit = {
-                            newText = match.insert_text,
+                            newText =
+                                match.insert_text
+                                ..
+                                (utils.get_option(feature.insert_text_trailing) or ''),
                         },
                         documentation = match.documentation,
                     }

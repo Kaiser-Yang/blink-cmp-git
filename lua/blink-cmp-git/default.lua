@@ -69,6 +69,7 @@ local default_commit = {
         '--pretty=fuller',
         '--decorate=no',
     },
+    insert_text_trailing = ' ',
     separate_output = function(output)
         local lines = vim.split(output, '\n')
         local i = 1
@@ -99,7 +100,7 @@ local default_commit = {
                     ' '
                     ..
                     commit:match('\n\n%s*([^\n]*)'),
-                insert_text = commit:match('^commit ([^\n]*)'):sub(1, 7) .. ' ',
+                insert_text = commit:match('^commit ([^\n]*)'):sub(1, 7),
                 documentation = commit
             }
         end
@@ -134,7 +135,7 @@ local default_github_pr_and_issue_separate_output = function(output)
         items[i] = {
             label = '#' .. tostring(json_res[i].number) ..
                 ' ' .. tostring(json_res[i].title),
-            insert_text = '#' .. tostring(json_res[i].number) .. ' ',
+            insert_text = '#' .. tostring(json_res[i].number),
             documentation =
                 '#' .. tostring(json_res[i].number) ..
                 ' ' .. tostring(json_res[i].title) .. '\n' ..
@@ -168,6 +169,7 @@ local default = {
                     'list',
                     '--json', 'number,title,state,body,createdAt,updatedAt,closedAt,author',
                 },
+                insert_text_trailing = ' ',
                 separate_output = default_github_pr_and_issue_separate_output,
                 on_error = default_on_error,
             },
@@ -180,6 +182,7 @@ local default = {
                     'list',
                     '--json', 'number,title,state,body,createdAt,updatedAt,closedAt,author',
                 },
+                insert_text_trailing = ' ',
                 separate_output = default_github_pr_and_issue_separate_output,
                 on_error = default_on_error,
             },
@@ -191,13 +194,14 @@ local default = {
                     'api',
                     'repos/:owner/:repo/contributors',
                 },
+                insert_text_trailing = ' ',
                 separate_output = function(output)
                     local json_res = vim.json.decode(output)
                     local items = {}
                     for i = 1, #json_res do
                         items[i] = {
                             label = '@' .. tostring(json_res[i].login),
-                            insert_text = '@' .. tostring(json_res[i].login) .. ' ',
+                            insert_text = '@' .. tostring(json_res[i].login),
                             documentation = {
                                 get_command = 'gh',
                                 get_command_args = {
