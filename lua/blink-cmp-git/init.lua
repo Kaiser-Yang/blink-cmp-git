@@ -5,6 +5,8 @@ local default = require('blink-cmp-git.default')
 local utils = require('blink-cmp-git.utils')
 local Job = require('plenary.job')
 local log = require('blink-cmp-git.log')
+local blink_cmp_git_reload_cache_command = 'BlinkCmpGitReloadCache'
+local blink_cmp_git_autocmd_group = 'blink-cmp-git-autocmd'
 log.setup({ title = 'blink-cmp-git' })
 
 --- @class blink.cmp.Source
@@ -168,7 +170,7 @@ function GitSource.new(opts, _)
         self:create_pre_cache_jobs()
         self:run_pre_cache_jobs()
     end
-    vim.api.nvim_create_user_command('BlinkCmpGitReloadCache', function()
+    vim.api.nvim_create_user_command(blink_cmp_git_reload_cache_command, function()
         if utils.get_option(self.git_source_config.use_items_cache) then
             self.cache:clear()
             if utils.get_option(self.git_source_config.use_items_pre_cache) then
@@ -178,6 +180,14 @@ function GitSource.new(opts, _)
             end
         end
     end, { nargs = 0 })
+    vim.api.nvim_create_autocmd('BufEnter', {
+        group = blink_cmp_git_autocmd_group,
+        callback = function()
+            if utils.get_option(self.git_source_config.should_reload_cache) then
+                vim.cmd(blink_cmp_git_reload_cache_command)
+            end
+        end
+    })
     return self
 end
 
