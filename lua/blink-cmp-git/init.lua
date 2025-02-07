@@ -16,6 +16,7 @@ local GitSource = {}
 --- @param documentation_command blink-cmp-git.DocumentationCommand
 --- @return Job
 local function create_job_from_documentation_command(documentation_command)
+    ---@diagnostic disable-next-line: missing-fields
     return Job:new({
         command = utils.get_option(documentation_command.get_command),
         args = utils.get_option(documentation_command.get_command_args),
@@ -44,10 +45,11 @@ end
 local function create_job_from_feature(feature, items)
     local cmd = utils.get_option(feature.get_command)
     local cmd_args = utils.get_option(feature.get_command_args)
+    ---@diagnostic disable-next-line: missing-fields
     return Job:new({
         command = cmd,
         args = cmd_args,
-        on_exit = function(j, return_value, signal)
+        on_exit = vim.schedule_wrap(function(j, return_value, signal)
             if signal == 9 then
                 return
             end
@@ -72,7 +74,7 @@ local function create_job_from_feature(feature, items)
             else
                 log.trace('search command return empty result')
             end
-        end
+        end)
     })
 end
 
