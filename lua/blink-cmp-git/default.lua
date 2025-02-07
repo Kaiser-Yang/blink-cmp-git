@@ -4,6 +4,7 @@ log.setup({ title = 'blink-cmp-git' })
 
 local function is_inside_git_repo()
     local res = false
+---@diagnostic disable-next-line: missing-fields
     Job:new({
         command = 'git',
         args = { 'rev-parse', '--is-inside-work-tree' },
@@ -78,6 +79,7 @@ local default_commit = {
 -- check if the git repo is hosted on GitHub
 local function remote_contains_github()
     local output = ''
+---@diagnostic disable-next-line: missing-fields
     Job:new({
         command = 'git',
         args = { 'remote', '-v' },
@@ -190,7 +192,7 @@ local default = {
             },
         },
         -- TODO: this will be implemented in the future
-        git_lab = {}
+        gitlab = {}
     }
 }
 return default
