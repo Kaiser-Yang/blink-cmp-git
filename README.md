@@ -194,6 +194,7 @@ separate_output = function(output)
         commits[#commits + 1] = table.concat(lines, '\n', i, j)
         i = j + 1
     end
+    --- @type blink-cmp-git.CompletionItem[]
     local items = {}
     ---@diagnostic disable-next-line: redefined-local
     for i = 1, #commits do
@@ -208,6 +209,7 @@ separate_output = function(output)
                 ' '
                 ..
                 commit:match('\n\n%s*([^\n]*)'),
+            kind_name = 'Commit',
             -- insert_text is what to insert when you select or accept the item
             insert_text = commit:match('^commit ([^\n]*)'):sub(1, 7) .. ' ',
             -- this can be a `DocumentationCommand` or a string

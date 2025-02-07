@@ -66,7 +66,7 @@ local function create_job_from_feature(feature, items)
                 vim.iter(match_list):each(function(match)
                     items[match] = {
                         label = match.label,
-                        kind = require('blink.cmp.types').CompletionItemKind.Text,
+                        kind = require('blink.cmp.types').CompletionItemKind[match.kind_name] or 0,
                         textEdit = {
                             newText =
                                 match.insert_text
@@ -192,6 +192,14 @@ function GitSource.new(opts, _)
             end
         end
     })
+    local completion_item_kind = require('blink.cmp.types').CompletionItemKind
+    local blink_kind_icons = require('blink.cmp.config').appearance.kind_icons
+    for kind_name, icon in pairs(utils.get_option(self.git_source_config.kind_icons)) do
+        completion_item_kind[#completion_item_kind + 1] = kind_name
+        completion_item_kind[kind_name] = #completion_item_kind
+        blink_kind_icons[kind_name] = icon
+        vim.api.nvim_set_hl(0, 'BlinkCmpKind' .. kind_name, { link = 'BlinkCmpKind', default = true })
+    end
     return self
 end
 

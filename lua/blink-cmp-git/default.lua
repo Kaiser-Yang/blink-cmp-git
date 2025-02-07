@@ -96,6 +96,7 @@ local default_commit = {
             commits[#commits + 1] = table.concat(lines, '\n', i, j)
             i = j + 1
         end
+        --- @type blink-cmp-git.CompletionItem[]
         local items = {}
         ---@diagnostic disable-next-line: redefined-local
         for i = 1, #commits do
@@ -109,6 +110,7 @@ local default_commit = {
                     ' '
                     ..
                     commit:match('\n\n%s*([^\n]*)'),
+                kind_name = 'Commit',
                 insert_text = commit:match('^commit ([^\n]*)'):sub(1, 7),
                 documentation = commit
             }
@@ -136,29 +138,6 @@ local function default_github_enable()
     return output:find('github.com') ~= nil
 end
 
-local default_github_pr_and_issue_separate_output = function(output)
-    --- @type blink-cmp-git.CompletionItem[]
-    local items = {}
-    local json_res = vim.json.decode(output)
-    for i = 1, #json_res do
-        items[i] = {
-            label = '#' .. tostring(json_res[i].number) ..
-                ' ' .. tostring(json_res[i].title),
-            insert_text = '#' .. tostring(json_res[i].number),
-            documentation =
-                '#' .. tostring(json_res[i].number) ..
-                ' ' .. tostring(json_res[i].title) .. '\n' ..
-                'State: ' .. tostring(json_res[i].state) .. '\n' ..
-                'Author: ' .. tostring(json_res[i].author.login) .. '\n' ..
-                'Created at: ' .. tostring(json_res[i].createdAt) .. '\n' ..
-                'Updated at: ' .. tostring(json_res[i].updatedAt) .. '\n' ..
-                'Closed at: ' .. tostring(json_res[i].closedAt) .. '\n' ..
-                tostring(json_res[i].body)
-        }
-    end
-    return items
-end
-
 --- @type blink-cmp-git.Options
 local default = {
     async = true,
@@ -166,6 +145,12 @@ local default = {
     -- Whether or not cache the triggers when the source is loaded
     use_items_pre_cache = true,
     should_reload_cache = default_should_reload_cache,
+    kind_icons = {
+        Commit = '',
+        Mention = '',
+        PR = '',
+        Issue = '',
+    },
     commit = default_commit,
     git_centers = {
         github = {
@@ -179,7 +164,30 @@ local default = {
                     '--json', 'number,title,state,body,createdAt,updatedAt,closedAt,author',
                 },
                 insert_text_trailing = ' ',
-                separate_output = default_github_pr_and_issue_separate_output,
+                separate_output = function(output)
+                    --- @type blink-cmp-git.CompletionItem[]
+                    local items = {}
+                    local json_res = vim.json.decode(output)
+                    for i = 1, #json_res do
+                        items[i] = {
+                            label = '#' .. tostring(json_res[i].number) ..
+                                ' ' .. tostring(json_res[i].title),
+                            insert_text = '#' .. tostring(json_res[i].number),
+                            kind_name = 'Issue',
+                            documentation =
+                                '#' .. tostring(json_res[i].number) ..
+                                ' ' .. tostring(json_res[i].title) .. '\n' ..
+                                 -- Filter by state: {open|closed|merged|all} (default "open")
+                                'State: ' .. tostring(json_res[i].state) .. '\n' ..
+                                'Author: ' .. tostring(json_res[i].author.login) .. '\n' ..
+                                'Created at: ' .. tostring(json_res[i].createdAt) .. '\n' ..
+                                'Updated at: ' .. tostring(json_res[i].updatedAt) .. '\n' ..
+                                'Closed at: ' .. tostring(json_res[i].closedAt) .. '\n' ..
+                                tostring(json_res[i].body)
+                        }
+                    end
+                    return items
+                end,
                 on_error = default_on_error,
             },
             pull_request = {
@@ -192,7 +200,29 @@ local default = {
                     '--json', 'number,title,state,body,createdAt,updatedAt,closedAt,author',
                 },
                 insert_text_trailing = ' ',
-                separate_output = default_github_pr_and_issue_separate_output,
+                separate_output = function(output)
+                    --- @type blink-cmp-git.CompletionItem[]
+                    local items = {}
+                    local json_res = vim.json.decode(output)
+                    for i = 1, #json_res do
+                        items[i] = {
+                            label = '#' .. tostring(json_res[i].number) ..
+                                ' ' .. tostring(json_res[i].title),
+                            insert_text = '#' .. tostring(json_res[i].number),
+                            kind_name = 'PR',
+                            documentation =
+                                '#' .. tostring(json_res[i].number) ..
+                                ' ' .. tostring(json_res[i].title) .. '\n' ..
+                                'State: ' .. tostring(json_res[i].state) .. '\n' ..
+                                'Author: ' .. tostring(json_res[i].author.login) .. '\n' ..
+                                'Created at: ' .. tostring(json_res[i].createdAt) .. '\n' ..
+                                'Updated at: ' .. tostring(json_res[i].updatedAt) .. '\n' ..
+                                'Closed at: ' .. tostring(json_res[i].closedAt) .. '\n' ..
+                                tostring(json_res[i].body)
+                        }
+                    end
+                    return items
+                end,
                 on_error = default_on_error,
             },
             mention = {
@@ -206,11 +236,13 @@ local default = {
                 insert_text_trailing = ' ',
                 separate_output = function(output)
                     local json_res = vim.json.decode(output)
+                    --- @type blink-cmp-git.CompletionItem[]
                     local items = {}
                     for i = 1, #json_res do
                         items[i] = {
                             label = '@' .. tostring(json_res[i].login),
                             insert_text = '@' .. tostring(json_res[i].login),
+                            kind_name = 'Mention',
                             documentation = {
                                 get_command = 'gh',
                                 get_command_args = {
