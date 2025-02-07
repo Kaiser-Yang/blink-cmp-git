@@ -46,7 +46,16 @@ local function default_commit_enable()
     return res
 end
 
+local default_ignored_error = {
+    'repository has disabled issues',
+    'does not have any commits yet'
+}
 local default_on_error = function(return_value, standard_error)
+    for _, ignored_error in pairs(default_ignored_error) do
+        if standard_error:find(ignored_error) then
+            return true
+        end
+    end
     vim.schedule(function()
         log.error('get_completions failed',
             '\n',

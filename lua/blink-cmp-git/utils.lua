@@ -30,7 +30,7 @@ end
 function M.str(...)
     local args = { ... }
     for i, v in ipairs(args) do
-        args[i] = vim.inspect(v)
+        args[i] = type(args[i]) == 'string' and args[i] or vim.inspect(v)
     end
     return table.concat(args, ' ')
 end
