@@ -79,9 +79,9 @@ git = {
             -- triggers = { ':' },
         }
         git_centers = {
-            git_hub = {
+            github = {
                 -- Those below have the same fields with `commit`
-                -- issues = {
+                -- issue = {
                 -- },
                 -- pull_request = {
                 -- },
