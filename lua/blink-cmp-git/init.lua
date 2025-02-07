@@ -180,6 +180,7 @@ function GitSource.new(opts, _)
             end
         end
     end, { nargs = 0 })
+    vim.api.nvim_create_augroup(blink_cmp_git_autocmd_group, { clear = true })
     vim.api.nvim_create_autocmd('BufEnter', {
         group = blink_cmp_git_autocmd_group,
         callback = function()
