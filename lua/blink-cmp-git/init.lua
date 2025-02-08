@@ -158,12 +158,6 @@ end
 --- @param opts blink-cmp-git.Options
 --- @return blink-cmp-git.GCSCompletionOptions[]
 function GitSource.new(opts, _)
-    if vim.fn.executable('git') == 0 then
-        log.warn('git is not installed, the source may not work')
-    end
-    if vim.fn.executable('gh') == 0 then
-        log.warn('gh is not installed, the source may not work')
-    end
     local self = setmetatable({}, { __index = GitSource })
     self.git_source_config = vim.tbl_deep_extend("force", default, opts or {})
     self.cache = require('blink-cmp-git.cache').new()
