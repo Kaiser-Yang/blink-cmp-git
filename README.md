@@ -288,12 +288,11 @@ Firstly, you should update the `get_command_args` to get all states of the pull 
 git_centers = {
     github = {
         pull_request = {
-                get_command_args = {
-                    'pr',
-                    'list',
-                    '--state', 'all', -- get all pull requests
-                    '--json', 'number,title,state,body,createdAt,updatedAt,closedAt,author',
-                },
+            get_command_args = {
+                'pr',
+                'list',
+                '--state', 'all', -- get all pull requests
+                '--json', 'number,title,state,body,createdAt,updatedAt,closedAt,author',
             },
         }
     }
