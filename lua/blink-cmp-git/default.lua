@@ -3,6 +3,13 @@ local log = require('blink-cmp-git.log')
 local utils = require('blink-cmp-git.utils')
 log.setup({ title = 'blink-cmp-git' })
 
+--- @param items blink-cmp-git.CompletionItem[]
+local score_offset_origin = function(items)
+    for i = 1, #items do
+        items[i].score_offset = #items - i
+    end
+end
+
 -- Get the absolute path of current git repo
 local function get_git_repo_absolute_path(path)
     if vim.fn.executable('git') == 0 then return nil end
@@ -118,6 +125,7 @@ local default_commit = {
         end
         return items
     end,
+    configure_score_offset = score_offset_origin,
     on_error = default_on_error,
 }
 
@@ -165,6 +173,46 @@ local function default_github_pr_or_issue_separate_output(output, is_pr)
     return items
 end
 
+local function default_github_pr_or_issue_configure_score_offset(items)
+    -- Bonus to make sure items sorted as below:
+    -- open issue
+    -- open pr
+    -- closed issue
+    -- merged pr
+    -- closed pr
+    local keys = {
+        'OPENIssue',
+        'OPENPR',
+        'CLOSEDIssue',
+        'MERGEDPR',
+        'CLOSEDPR'
+    }
+    local bonus = 999999
+    local bonus_score = {
+    }
+    for i = 1, #keys do
+        bonus_score[keys[i]] = bonus * (#keys - i)
+    end
+    for i = 1, #items do
+        local state = ''
+        if type(items[i].documentation) == 'string' then
+            state = items[i].documentation:match('State: (%w*)')
+        end
+        local bonus_key = state .. items[i].kind_name
+        if bonus_score[bonus_key] then
+            items[i].score_offset = bonus_score[bonus_key]
+        end
+        -- sort by number when having the same bonus score
+        local number = items[i].label:match('#(%d+)')
+        if number then
+            if items[i].score_offset == nil then
+                items[i].score_offset = 0
+            end
+            items[i].score_offset = items[i].score_offset + tonumber(number)
+        end
+    end
+end
+
 --- @type blink-cmp-git.Options
 local default = {
     async = true,
@@ -188,12 +236,14 @@ local default = {
                 get_command_args = {
                     'issue',
                     'list',
+                    '--state', 'all',
                     '--json', 'number,title,state,stateReason,body,createdAt,updatedAt,closedAt,author',
                 },
                 insert_text_trailing = ' ',
                 separate_output = function(output)
                     return default_github_pr_or_issue_separate_output(output, false)
                 end,
+                configure_score_offset = default_github_pr_or_issue_configure_score_offset,
                 on_error = default_on_error,
             },
             pull_request = {
@@ -203,12 +253,14 @@ local default = {
                 get_command_args = {
                     'pr',
                     'list',
+                    '--state', 'all',
                     '--json', 'number,title,state,body,createdAt,updatedAt,closedAt,author',
                 },
                 insert_text_trailing = ' ',
                 separate_output = function(output)
                     return default_github_pr_or_issue_separate_output(output, true)
                 end,
+                configure_score_offset = default_github_pr_or_issue_configure_score_offset,
                 on_error = default_on_error,
             },
             mention = {
@@ -252,6 +304,7 @@ local default = {
                     end
                     return items
                 end,
+                configure_score_offset = score_offset_origin,
                 on_error = default_on_error,
             },
         },

@@ -61,8 +61,8 @@ local function create_job_from_feature(feature, items)
                 end
             end
             if utils.truthy(j:result()) then
-                local match_list = utils.get_option(feature.separate_output,
-                    table.concat(j:result(), '\n'))
+                local match_list = feature.separate_output(table.concat(j:result(), '\n'))
+                feature.configure_score_offset(match_list)
                 vim.iter(match_list):each(function(match)
                     items[match] = {
                         label = match.label,
@@ -73,6 +73,7 @@ local function create_job_from_feature(feature, items)
                                 ..
                                 (utils.get_option(feature.insert_text_trailing) or ''),
                         },
+                        score_offset = match.score_offset,
                         documentation = match.documentation,
                     }
                 end)
