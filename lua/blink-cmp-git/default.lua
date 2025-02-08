@@ -1,5 +1,6 @@
 local Job = require('plenary.job')
 local log = require('blink-cmp-git.log')
+local utils = require('blink-cmp-git.utils')
 log.setup({ title = 'blink-cmp-git' })
 
 -- Get the absolute path of current git repo
@@ -152,6 +153,8 @@ local function default_github_pr_or_issue_separate_output(output, is_pr)
                 '#' .. tostring(json_res[i].number) ..
                 ' ' .. tostring(json_res[i].title) .. '\n' ..
                 'State: ' .. tostring(json_res[i].state) .. '\n' ..
+                ((is_pr or not utils.truthy(tostring(json_res[i].stateReason))) and '' or
+                    'State Reason: ' .. tostring(json_res[i].stateReason) .. '\n') ..
                 'Author: ' .. tostring(json_res[i].author.login) .. '\n' ..
                 'Created at: ' .. tostring(json_res[i].createdAt) .. '\n' ..
                 'Updated at: ' .. tostring(json_res[i].updatedAt) .. '\n' ..
@@ -185,7 +188,7 @@ local default = {
                 get_command_args = {
                     'issue',
                     'list',
-                    '--json', 'number,title,state,body,createdAt,updatedAt,closedAt,author',
+                    '--json', 'number,title,state,stateReason,body,createdAt,updatedAt,closedAt,author',
                 },
                 insert_text_trailing = ' ',
                 separate_output = function(output)
