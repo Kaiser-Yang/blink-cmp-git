@@ -7,6 +7,7 @@
 --- @field label string
 --- @field kind_name string
 --- @field insert_text string
+--- @field score_offset? number
 --- @field documentation string|blink-cmp-git.DocumentationCommand
 
 --- @class (exact) blink-cmp-git.GCSCompletionOptions
@@ -16,6 +17,7 @@
 --- @field get_command_args? string[]|fun(): string[]
 --- @field insert_text_trailing? string|fun(): string
 --- @field separate_output? fun(output: string): blink-cmp-git.CompletionItem[]
+--- @field configure_score_offset? fun(items: blink-cmp-git.CompletionItem[])
 --- @field on_error? fun(return_value: number, standard_error: string): boolean
 
 --- @class (exact) blink-cmp-git.GCSOptions

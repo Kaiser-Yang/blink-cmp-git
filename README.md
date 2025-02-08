@@ -230,6 +230,16 @@ separate_output = function(output)
 end,
 ```
 
+> [!NOTE]
+>
+> `kind_name` is used by those default options:
+>
+> * `git_centers.github.pr.configure_score_offset`
+> * `git_centers.github.issue.configure_score_offset`
+> * `kind_icons`
+>
+> Therefore, if you customize the `kind_name`, you should customize them too.
+
 ### How to customize the error message?
 
 From the version `v0.2.0`, there is a configuration `on_error` for all the `GCSCompletionOptions`.
@@ -282,24 +292,7 @@ vim.api.nvim_set_hl(0, 'BlinkCmpKind' .. 'Commit', { default = false, bg = 'red'
 
 I'll give you the example for pull requests. You can do the same for issues.
 
-Firstly, you should update the `get_command_args` to get all states of the pull requests or issues:
-
-```lua
-git_centers = {
-    github = {
-        pull_request = {
-            get_command_args = {
-                'pr',
-                'list',
-                '--state', 'all', -- get all pull requests
-                '--json', 'number,title,state,body,createdAt,updatedAt,closedAt,author',
-            },
-        }
-    }
-}
-```
-
-Secondly, you should update the `separate_output` to customize the `kind_name`:
+Firstly, you should update the `separate_output` to customize the `kind_name`:
 
 ```lua
 git_centers = {
@@ -314,10 +307,10 @@ git_centers = {
                         label = '#' .. tostring(json_res[i].number) ..
                             ' ' .. tostring(json_res[i].title),
                         insert_text = '#' .. tostring(json_res[i].number),
-                        -- PROPEN
-                        -- PRCLOSED
-                        -- PRMERGED
-                        kind_name = 'PR' .. tostring(json_res[i].state),
+                        -- OPENPR
+                        -- CLOSEDPR
+                        -- MERGEDPR
+                        kind_name = tostring(json_res[i].state) .. 'PR',
                         documentation =
                             '#' .. tostring(json_res[i].number) ..
                             ' ' .. tostring(json_res[i].title) .. '\n' ..
@@ -336,18 +329,71 @@ git_centers = {
 }
 ```
 
-At last, you should update the icon for the `kind_name`:
+Then, you should update the icon for the `kind_name`:
 
 ```lua
 kind_icons = {
-    PROPEN = '',
-    PRCLOSED = '',
-    PRMERGED = '',
+    OPENPR = '',
+    CLOSEDPR = '',
+    MERGEDPR = '',
 }
 ```
 
 You may need to update the highlight for the `kind_name`,
 see [How to customize the highlight?](#how-to-customize-the-highlight).
+
+You may also need to update the `configure_score_offset`, otherwise the default may not work as you
+expected. There is an example:
+
+```lua
+local function github_pr_or_issue_configure_score_offset(items)
+    -- Bonus to make sure items sorted as below:
+    -- open issue
+    -- open pr
+    -- closed issue
+    -- merged pr
+    -- closed pr
+    local keys = {
+        -- place `kind_name` here
+        'OPENIssue',
+        'OPENPR',
+        'CLOSEDIssue',
+        'MERGEDPR',
+        'CLOSEDPR'
+    }
+    local bonus = 999999
+    local bonus_score = {
+    }
+    for i = 1, #keys do
+        bonus_score[keys[i]] = bonus * (#keys - i)
+    end
+    for i = 1, #items do
+        local bonus_key = items[i].kind_name
+        if bonus_score[bonus_key] then
+            items[i].score_offset = bonus_score[bonus_key]
+        end
+        -- sort by number when having the same bonus score
+        local number = items[i].label:match('#(%d+)')
+        if number then
+            if items[i].score_offset == nil then
+                items[i].score_offset = 0
+            end
+            items[i].score_offset = items[i].score_offset + tonumber(number)
+        end
+    end
+end
+
+git_centers = {
+    github = {
+        pull_request = {
+            configure_score_offset = github_pr_or_issue_configure_score_offset,
+        },
+        issue = {
+            configure_score_offset = github_pr_or_issue_configure_score_offset,
+        },
+    }
+}
+```
 
 ## Performance
 
