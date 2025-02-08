@@ -272,7 +272,7 @@ available for you to customize the highlight. By default, `blink-cmp-git` will u
 those below:
 
 ```lua
--- Commit is from the `separate_output` function
+-- `Commit` is from the `separate_output` function
 -- The `kind_name` for default `separate_output` are `Commit`, `Issue`, `PR`.
 -- If you customize the `separate_output`, you should update `Commit` with your `kind_name`
 vim.api.nvim_set_hl(0, 'BlinkCmpKind' .. 'Commit', { default = false, bg = 'red' })

@@ -3,7 +3,7 @@ local health = vim.health
 
 local function check_command_executable(command)
     if vim.fn.executable(command) == 0 then
-        health.warn('"' .. command '"' .. ' not found.')
+        health.warn('"' .. command .. '"' .. ' not found.')
     else
         health.ok('"' .. command .. '" found.')
     end
