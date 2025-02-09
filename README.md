@@ -128,7 +128,7 @@ You can bind the command to a key or create a vim autocommand to reload the cach
 
 ## Default Configuration
 
-See [default.lua](./lua/blink-cmp-git/default.lua).
+See [default.lua](./lua/blink-cmp-git/default/init.lua).
 
 ## FAQs
 
@@ -262,7 +262,7 @@ commit = {
 
 ### How to remove trailing white spaces?
 
-By default, `blink-cmp-git` add a space for every item when you select or accept it. If you don't
+By default, `blink-cmp-git` adds a space for every item when you select or accept it. If you don't
 want this, you can configure the `insert_text_trailing` for each feature. For example, those below
 will remove the trailing white spaces for `commit`:
 
@@ -283,7 +283,7 @@ those below:
 
 ```lua
 -- `Commit` is from the `separate_output` function
--- The `kind_name` for default `separate_output` are `Commit`, `Issue`, `PR`.
+-- The `kind_name` for default `separate_output` are `Commit`, `Issue`, `PR` and 'Mention'.
 -- If you customize the `separate_output`, you should update `Commit` with your `kind_name`
 vim.api.nvim_set_hl(0, 'BlinkCmpKind' .. 'Commit', { default = false, bg = 'red' })
 ```
@@ -348,11 +348,7 @@ expected. There is an example:
 ```lua
 local function github_pr_or_issue_configure_score_offset(items)
     -- Bonus to make sure items sorted as below:
-    -- open issue
-    -- open pr
-    -- closed issue
-    -- merged pr
-    -- closed pr
+    -- open issue, open pr, closed issue, merged pr, closed pr
     local keys = {
         -- place `kind_name` here
         'OPENIssue',
@@ -362,8 +358,7 @@ local function github_pr_or_issue_configure_score_offset(items)
         'CLOSEDPR'
     }
     local bonus = 999999
-    local bonus_score = {
-    }
+    local bonus_score = {}
     for i = 1, #keys do
         bonus_score[keys[i]] = bonus * (#keys - i)
     end
