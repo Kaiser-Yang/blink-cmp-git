@@ -16,20 +16,25 @@ local default_gitlab_mr_or_issue_separate_output = function(output, is_mr)
             json_res[i].state == 'merged' and 'MERGED' or
             json_res[i].state
         items[i] = {
-            label = (is_mr and '!' or '#') .. tostring(json_res[i].iid) ..
-                ' ' .. tostring(json_res[i].title),
-            insert_text = (is_mr and '!' or '#') .. tostring(json_res[i].iid),
+            label = utils.concat_when_all_truthy({ is_mr and '!' or '#', json_res[i].iid, ' ', json_res[i].title }),
+            insert_text = utils.concat_when_all_truthy({ is_mr and '!' or '#', json_res[i].iid }),
             kind_name = is_mr and 'PR' or 'Issue',
             documentation =
-                '#' .. tostring(json_res[i].iid) ..
-                ' ' .. tostring(json_res[i].title) .. '\n' ..
-                'State: ' .. tostring(json_res[i].state) .. '\n' ..
-                'Author: ' .. tostring(json_res[i].author.username) ..
-                ' ' .. tostring(json_res[i].author.name) .. '\n' ..
-                'Created at: ' .. tostring(json_res[i].created_at) .. '\n' ..
-                'Updated at: ' .. tostring(json_res[i].updated_at) .. '\n' ..
-                'Closed at: ' .. tostring(json_res[i].closed_at) .. '\n' ..
-                tostring(json_res[i].description)
+                utils.concat_when_all_truthy({ is_mr and '!' or '#', json_res[i].iid, ' ', json_res[i].title, '\n' }) ..
+                utils.concat_when_all_truthy({ 'State: ', json_res[i].state, '\n' }) ..
+                utils.concat_when_all_truthy({ 'Author: ', json_res[i].author.username, '' }) ..
+                utils.concat_when_all_truthy({ ' (', json_res[i].author.name, ')' }) .. '\n' ..
+                utils.concat_when_all_truthy({ 'Created at: ', json_res[i].created_at, '\n' }) ..
+                utils.concat_when_all_truthy({ 'Updated at: ', json_res[i].updated_at, '\n' }) ..
+                (
+                    json_res[i].state == 'MERGED' and
+                    utils.concat_when_all_truthy({ 'Merged  at: ', json_res[i].merged_at, '\n' }) ..
+                    utils.concat_when_all_truthy({ 'Merged  by: ', json_res[i].merged_by.username, '' }) ..
+                    utils.concat_when_all_truthy({ ' (', json_res[i].merged_by.name, ')' }) .. '\n'
+                    or
+                    utils.concat_when_all_truthy({ 'Closed  at: ', json_res[i].closed_at, '\n' })
+                ) ..
+                utils.concat_when_all_truthy({ json_res[i].description, '' }),
         }
     end
     return items
@@ -77,8 +82,8 @@ local default_gitlab_mention_separate_output = function(output)
     local json_res = utils.json_decode(output)
     for i = 1, #json_res do
         items[i] = {
-            label = '@' .. tostring(json_res[i].username),
-            insert_text = '@' .. tostring(json_res[i].username),
+            label = utils.concat_when_all_truthy({ '@', json_res[i].username }),
+            insert_text = utils.concat_when_all_truthy({ '@', json_res[i].username }),
             kind_name = 'Mention',
             documentation = {
                 get_command = 'glab',
@@ -90,12 +95,12 @@ local default_gitlab_mention_separate_output = function(output)
                 resolve_documentation = function(output)
                     local user_info = utils.json_decode(output)
                     return
-                        tostring(user_info.username) ..
-                        ' (' .. tostring(user_info.name) .. ')\n' ..
-                        'Location: ' .. tostring(user_info.location) .. '\n' ..
-                        'Email: ' .. tostring(user_info.public_email) .. '\n' ..
-                        'Company: ' .. tostring(user_info.work_information) .. '\n' ..
-                        'Created at: ' .. tostring(user_info.created_at) .. '\n'
+                        utils.concat_when_all_truthy({ user_info.username, '' }) ..
+                        utils.concat_when_all_truthy({ ' (', user_info.name, ')' }) .. '\n' ..
+                        utils.concat_when_all_truthy({ 'Location: ', user_info.location, '\n' }) ..
+                        utils.concat_when_all_truthy({ 'Email: ', user_info.public_email, '\n' }) ..
+                        utils.concat_when_all_truthy({ 'Company: ', user_info.work_information, '\n' }) ..
+                        utils.concat_when_all_truthy({ 'Created at: ', user_info.created_at, '\n' })
                 end
             }
         }

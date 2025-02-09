@@ -307,12 +307,7 @@ git_centers = {
             separate_output = function(output)
                 --- @type blink-cmp-git.CompletionItem[]
                 local items = {}
-                local json_res = vim.json.decode(output, {
-                    luanil = {
-                        object = true,
-                        array = true
-                    }
-                })
+                local json_res = require('blink-cmp-git.utils').json_decode(output)
                 for i = 1, #json_res do
                     items[i] = {
                         label = '#' .. tostring(json_res[i].number) ..
@@ -329,7 +324,7 @@ git_centers = {
                             'Author: ' .. tostring(json_res[i].author.login) .. '\n' ..
                             'Created at: ' .. tostring(json_res[i].createdAt) .. '\n' ..
                             'Updated at: ' .. tostring(json_res[i].updatedAt) .. '\n' ..
-                            'Closed at: ' .. tostring(json_res[i].closedAt) .. '\n' ..
+                            'Closed  at: ' .. tostring(json_res[i].closedAt) .. '\n' ..
                             tostring(json_res[i].body)
                     }
                 end
