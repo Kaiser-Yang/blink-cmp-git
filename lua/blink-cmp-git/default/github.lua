@@ -10,7 +10,7 @@ end
 local function default_github_pr_or_issue_separate_output(output, is_pr)
     --- @type blink-cmp-git.CompletionItem[]
     local items = {}
-    local json_res = vim.json.decode(output)
+    local json_res = utils.json_decode(output)
     for i = 1, #json_res do
         items[i] = {
             label = '#' .. tostring(json_res[i].number) ..
@@ -71,7 +71,7 @@ local function default_github_pr_or_issue_configure_score_offset(items)
 end
 
 local function default_github_mention_separate_output(output)
-    local json_res = vim.json.decode(output)
+    local json_res = utils.json_decode(output)
     --- @type blink-cmp-git.CompletionItem[]
     local items = {}
     for i = 1, #json_res do
@@ -87,10 +87,10 @@ local function default_github_mention_separate_output(output)
                 },
                 ---@diagnostic disable-next-line: redefined-local
                 resolve_documentation = function(output)
-                    local user_info = vim.json.decode(output)
+                    local user_info = utils.json_decode(output)
                     return
                         tostring(user_info.login) ..
-                        ' ' .. tostring(user_info.name) .. '\n' ..
+                        ' (' .. tostring(user_info.name) .. ')\n' ..
                         'Location: ' .. tostring(user_info.location) .. '\n' ..
                         'Email: ' .. tostring(user_info.email) .. '\n' ..
                         'Company: ' .. tostring(user_info.company) .. '\n' ..

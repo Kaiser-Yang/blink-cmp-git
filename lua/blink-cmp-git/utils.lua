@@ -54,4 +54,9 @@ function M.remote_url_contain(content)
     return output:find(content) ~= nil
 end
 
+function M.json_decode(str, opts)
+    opts = vim.tbl_extend('force', { luanil = { object = true, array = true } }, opts or {})
+    return vim.json.decode(str, opts)
+end
+
 return M

@@ -9,7 +9,7 @@ end
 local default_gitlab_mr_or_issue_separate_output = function(output, is_mr)
     --- @type blink-cmp-git.CompletionItem[]
     local items = {}
-    local json_res = vim.json.decode(output)
+    local json_res = utils.json_decode(output)
     for i = 1, #json_res do
         json_res[i].state = json_res[i].state == 'opened' and 'OPEN' or
             json_res[i].state == 'closed' and 'CLOSED' or
@@ -74,7 +74,7 @@ end
 local default_gitlab_mention_separate_output = function(output)
     --- @type blink-cmp-git.CompletionItem[]
     local items = {}
-    local json_res = vim.json.decode(output)
+    local json_res = utils.json_decode(output)
     for i = 1, #json_res do
         items[i] = {
             label = '@' .. tostring(json_res[i].username),
@@ -88,10 +88,10 @@ local default_gitlab_mention_separate_output = function(output)
                 },
                 ---@diagnostic disable-next-line: redefined-local
                 resolve_documentation = function(output)
-                    local user_info = vim.json.decode(output)
+                    local user_info = utils.json_decode(output)
                     return
                         tostring(user_info.username) ..
-                        ' ' .. tostring(user_info.name) .. '\n' ..
+                        ' (' .. tostring(user_info.name) .. ')\n' ..
                         'Location: ' .. tostring(user_info.location) .. '\n' ..
                         'Email: ' .. tostring(user_info.public_email) .. '\n' ..
                         'Company: ' .. tostring(user_info.work_information) .. '\n' ..
