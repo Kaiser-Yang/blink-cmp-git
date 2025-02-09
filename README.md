@@ -4,7 +4,7 @@ Git source for [blink.cmp](https://github.com/Saghen/blink.cmp)
 completion plugin. This makes it possible to query pull requests, issues,
 and users from GitHub. This is very useful when you are writing a commit with `nvim`.
 
-Use `#` to search for issues and pull requests:
+Use `#` to search for issues and pull requests (`!` for `gitlab`'s merge requests):
 
 ![blink-cmp-git pr and issues](./images/demo-prs-issues.png)
 
@@ -66,9 +66,6 @@ Add the plugin to your packer managers, and make sure it is loaded before `blink
 git = {
     module = 'blink-cmp-git',
     name = 'Git',
-    -- Because we use filetype to decide whether or not to show the items,
-    -- we can make the score higher
-    score_offset = 100,
     -- enabled this source at the beginning to make it possible to pre-cache
     -- at very beginning
     enabled = true,
@@ -97,6 +94,19 @@ git = {
                 -- },
                 -- mention = {
                 -- }
+            },
+            gitlab = {
+                -- Those below have the same fields with `commit`
+                -- Those features will be enabled when `git` and `glab` are found and
+                -- remote contains `gitlab.com`
+                -- issue = {
+                -- },
+                -- NOTE:
+                -- Even for `gitlab`, you should use `pull_request` rather than`merge_request`
+                -- pull_request = {
+                -- },
+                -- mention = {
+                -- }
             }
         }
     }
@@ -104,7 +114,7 @@ git = {
 ```
 
 The configuration above will enable the `blink-cmp-git` for `blink.cmp` and show the items
-when the filetype is `gitcommit` or `markdown`. By default, `blink-cmp-git` will pre-cache
+when the file's type is `gitcommit` or `markdown`. By default, `blink-cmp-git` will pre-cache
 everything when it is created. To enable `blink-cmp-git` all the time makes it possible to
 pre-cache when you enter insert mode or other mode you can input
 (`blink.cmp` will create sources when you can input something).
