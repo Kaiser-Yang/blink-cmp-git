@@ -285,6 +285,9 @@ function GitSource:handle_items_pre_cache(context, callback)
             -- Make sure this callback is the last one
             table.remove(j._additional_on_exit_callbacks)
             if signal == 9 then
+                vim.schedule(function()
+                    callback()
+                end)
                 return
             end
             items = self.cache:get(trigger) or {}
@@ -315,9 +318,11 @@ function GitSource:get_completions(context, callback)
             items = vim.tbl_values(items)
         })
     end
-    if context.trigger and context.trigger.initial_character and
+    ---@diagnostic disable-next-line: missing-parameter
+    if not self:should_show_items(context) or
         not context.line:sub(1, context.cursor[2]):match(context.trigger.initial_character .. '$')
     then
+        transformed_callback()
         return function() end
     end
     local cancel_fun = self:handle_items_pre_cache(context, callback)
@@ -364,11 +369,15 @@ function GitSource:get_completions(context, callback)
     end
     -- the feature for the trigger may not be enabled
     if not utils.truthy(jobs) then
+        transformed_callback()
         return cancel_fun
     end
     -- let the last job call the transformed_callback
     jobs[#jobs]:after(function(_, _, signal)
         if signal == 9 then
+            vim.schedule(function()
+                callback()
+            end)
             return
         end
         if use_items_cache then
