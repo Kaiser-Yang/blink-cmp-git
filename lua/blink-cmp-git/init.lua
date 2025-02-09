@@ -315,7 +315,8 @@ function GitSource:get_completions(context, callback)
             items = vim.tbl_values(items)
         })
     end
-    if not context.line:sub(1, context.cursor[2]):match(context.trigger.initial_character .. '$')
+    if context.trigger and context.trigger.initial_character and
+        not context.line:sub(1, context.cursor[2]):match(context.trigger.initial_character .. '$')
     then
         return function() end
     end
