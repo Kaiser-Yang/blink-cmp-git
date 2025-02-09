@@ -307,7 +307,12 @@ git_centers = {
             separate_output = function(output)
                 --- @type blink-cmp-git.CompletionItem[]
                 local items = {}
-                local json_res = vim.json.decode(output)
+                local json_res = vim.json.decode(output, {
+                    luanil = {
+                        object = true,
+                        array = true
+                    }
+                })
                 for i = 1, #json_res do
                     items[i] = {
                         label = '#' .. tostring(json_res[i].number) ..
