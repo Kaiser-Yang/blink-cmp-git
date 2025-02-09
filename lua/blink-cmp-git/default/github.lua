@@ -78,7 +78,7 @@ local function default_github_pr_or_issue_get_documentation(item)
 end
 
 local function default_github_mention_get_label(item)
-    return utils.concat_when_all_true('@', item.login, '')
+    return utils.concat_when_all_true(item.login, '')
 end
 
 local function default_github_mention_get_kind_name(_)

@@ -98,7 +98,7 @@ local function default_gitlab_mr_get_documentation(item)
 end
 
 local function default_gitlab_mention_get_label(item)
-    return utils.concat_when_all_true('@', item.username, '')
+    return utils.concat_when_all_true(item.username, '')
 end
 
 local function default_gitlab_mention_get_kind_name(_)
