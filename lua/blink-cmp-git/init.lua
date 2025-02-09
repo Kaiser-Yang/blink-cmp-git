@@ -452,6 +452,9 @@ function GitSource:resolve(item, callback)
             -- cache empty string
             self.cache:set({ trigger, item.label, 'documentation' }, item.documentation or '')
         end
+        if item.documentation == '' then
+            item.documentation = nil
+        end
         vim.schedule(function() transformed_callback() end)
     end)
     if utils.get_option(self.git_source_config.async) then
