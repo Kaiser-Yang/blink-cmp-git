@@ -236,13 +236,11 @@ function GitSource:handle_items_pre_cache(context, callback)
             item.textEdit.range = get_text_edit_range(context)
             item.gitSourceTrigger = trigger
         end
-        vim.schedule(function()
-            callback({
-                is_incomplete_backward = false,
-                is_incomplete_forward = false,
-                items = vim.tbl_values(items)
-            })
-        end)
+        callback({
+            is_incomplete_backward = false,
+            is_incomplete_forward = false,
+            items = vim.tbl_values(items)
+        })
     end
     local job_and_items = self.pre_cache_jobs[trigger]
     -- no enabled features
@@ -287,13 +285,10 @@ function GitSource:handle_items_pre_cache(context, callback)
             -- Make sure this callback is the last one
             table.remove(j._additional_on_exit_callbacks)
             if signal == 9 then
-                vim.schedule(function()
-                    callback()
-                end)
                 return
             end
             items = self.cache:get(trigger) or {}
-            transformed_callback()
+            vim.schedule(function() transformed_callback() end)
         end)
         job_and_items.jobs[1]:start()
         return cancel_fun
@@ -314,17 +309,14 @@ function GitSource:get_completions(context, callback)
             item.textEdit.range = get_text_edit_range(context)
             item.gitSourceTrigger = trigger
         end
-        vim.schedule(function()
-            callback({
-                is_incomplete_backward = false,
-                is_incomplete_forward = false,
-                items = vim.tbl_values(items)
-            })
-        end)
+        callback({
+            is_incomplete_backward = false,
+            is_incomplete_forward = false,
+            items = vim.tbl_values(items)
+        })
     end
-    ---@diagnostic disable-next-line: param-type-mismatch
-    if not self:should_show_items(context, nil) then
-        transformed_callback()
+    if not context.line:sub(1, context.cursor[2]):match(context.trigger.initial_character .. '$')
+    then
         return function() end
     end
     local cancel_fun = self:handle_items_pre_cache(context, callback)
@@ -371,15 +363,11 @@ function GitSource:get_completions(context, callback)
     end
     -- the feature for the trigger may not be enabled
     if not utils.truthy(jobs) then
-        transformed_callback()
         return cancel_fun
     end
     -- let the last job call the transformed_callback
     jobs[#jobs]:after(function(_, _, signal)
         if signal == 9 then
-            vim.schedule(function()
-                callback()
-            end)
             return
         end
         if use_items_cache then
@@ -387,7 +375,7 @@ function GitSource:get_completions(context, callback)
                 self.cache:set({ trigger, item.label }, item)
             end
         end
-        transformed_callback()
+        vim.schedule(function() transformed_callback() end)
     end)
     if async then
         cancel_fun = function()
@@ -395,8 +383,6 @@ function GitSource:get_completions(context, callback)
                 job:shutdown(0, 9)
             end
         end
-    end
-    if async then
         jobs[1]:start()
     else
         jobs[1]:sync()
@@ -416,9 +402,7 @@ function GitSource:resolve(item, callback)
     ---@diagnostic disable-next-line: undefined-field
     local trigger = item.gitSourceTrigger
     local transformed_callback = function()
-        vim.schedule(function()
-            callback(item)
-        end)
+        callback(item)
     end
     local use_items_cache = utils.get_option(self.git_source_config.use_items_cache)
     local cached_item_documentation
@@ -447,9 +431,6 @@ function GitSource:resolve(item, callback)
     ---@diagnostic disable-next-line: param-type-mismatch
     local job = create_job_from_documentation_command(item.documentation)
     job:after(function(_, _, signal)
-        if signal == 9 then
-            return
-        end
         if utils.truthy(job:result()) then
             item.documentation =
             ---@diagnostic disable-next-line: undefined-field
@@ -461,7 +442,7 @@ function GitSource:resolve(item, callback)
             -- cache empty string
             self.cache:set({ trigger, item.label, 'documentation' }, item.documentation or '')
         end
-        transformed_callback()
+        vim.schedule(function() transformed_callback() end)
     end)
     if utils.get_option(self.git_source_config.async) then
         job:start()
