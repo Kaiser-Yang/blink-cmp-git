@@ -93,7 +93,7 @@ local function default_github_mention_separate_output(output)
                     local user_info = utils.json_decode(output)
                     return
                         utils.concat_when_all_truthy({ user_info.login, '' }) ..
-                        utils.concat_when_all_truthy({ ' (', user_info[i].name, ')' }) .. '\n' ..
+                        utils.concat_when_all_truthy({ ' (', user_info.name, ')' }) .. '\n' ..
                         utils.concat_when_all_truthy({ 'Location: ', user_info.location, '\n' }) ..
                         utils.concat_when_all_truthy({ 'Email: ', user_info.email, '\n' }) ..
                         utils.concat_when_all_truthy({ 'Company: ', user_info.company, '\n' }) ..
