@@ -1,4 +1,5 @@
 local Job = require('plenary.job')
+local common = require('blink-cmp-git.default.common')
 
 -- enable when current directory is inside a git repo
 local function default_commit_enable()
@@ -33,26 +34,23 @@ local function default_commit_separate_output(output)
         commits[#commits + 1] = table.concat(lines, '\n', i, j)
         i = j + 1
     end
-    --- @type blink-cmp-git.CompletionItem[]
-    local items = {}
-    ---@diagnostic disable-next-line: redefined-local
-    for i = 1, #commits do
-        --- @type string
-        local commit = commits[i]
-        items[i] = {
-            -- the fist 7 characters of the hash and the subject of the commit
-            label =
-                commit:match('commit ([^\n]*)'):sub(1, 7)
-                ..
-                ' '
-                ..
-                commit:match('\n\n%s*([^\n]*)'),
-            kind_name = 'Commit',
-            insert_text = commit:match('^commit ([^\n]*)'):sub(1, 7),
-            documentation = commit
-        }
-    end
-    return items
+    return commits
+end
+
+local function default_commit_get_label(item)
+    return item:match('commit ([^\n]*)'):sub(1, 7) .. ' ' .. item:match('\n\n%s*([^\n]*)')
+end
+
+local function default_commit_get_kind_name()
+    return 'Commit'
+end
+
+local function default_commit_get_insert_text(item)
+    return item:match('commit ([^\n]*)'):sub(1, 7)
+end
+
+local function default_commit_get_documentation(item)
+    return item
 end
 
 --- @type blink-cmp-git.GCSCompletionOptions
@@ -68,6 +66,10 @@ return {
     },
     insert_text_trailing = ' ',
     separate_output = default_commit_separate_output,
-    configure_score_offset = require('blink-cmp-git.default.common').score_offset_origin,
-    on_error = require('blink-cmp-git.default.common').default_on_error,
+    get_label = default_commit_get_label,
+    get_kind_name = default_commit_get_kind_name,
+    get_insert_text = default_commit_get_insert_text,
+    get_documentation = default_commit_get_documentation,
+    configure_score_offset = common.score_offset_origin,
+    on_error = common.default_on_error,
 }

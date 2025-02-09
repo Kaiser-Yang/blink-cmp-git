@@ -1,43 +1,9 @@
 local utils = require('blink-cmp-git.utils')
+local common = require('blink-cmp-git.default.common')
 
 local default_gitlab_enable = function()
     if vim.fn.executable('git') == 0 or vim.fn.executable('glab') == 0 then return false end
     return utils.remote_url_contain('gitlab.com')
-end
-
--- TODO: refactor this function
-local default_gitlab_mr_or_issue_separate_output = function(output, is_mr)
-    --- @type blink-cmp-git.CompletionItem[]
-    local items = {}
-    local json_res = utils.json_decode(output)
-    for i = 1, #json_res do
-        json_res[i].state = json_res[i].state == 'opened' and 'OPEN' or
-            json_res[i].state == 'closed' and 'CLOSED' or
-            json_res[i].state == 'merged' and 'MERGED' or
-            json_res[i].state
-        items[i] = {
-            label = utils.concat_when_all_truthy({ is_mr and '!' or '#', json_res[i].iid, ' ', json_res[i].title }),
-            insert_text = utils.concat_when_all_truthy({ is_mr and '!' or '#', json_res[i].iid }),
-            kind_name = is_mr and 'PR' or 'Issue',
-            documentation =
-                utils.concat_when_all_truthy({ is_mr and '!' or '#', json_res[i].iid, ' ', json_res[i].title, '\n' }) ..
-                utils.concat_when_all_truthy({ 'State: ', json_res[i].state, '\n' }) ..
-                utils.concat_when_all_truthy({ 'Author: ', json_res[i].author.username, '' }) ..
-                utils.concat_when_all_truthy({ ' (', json_res[i].author.name, ')' }) .. '\n' ..
-                utils.concat_when_all_truthy({ 'Created at: ', json_res[i].created_at, '\n' }) ..
-                utils.concat_when_all_truthy({ 'Updated at: ', json_res[i].updated_at, '\n' }) ..
-                (
-                    json_res[i].state == 'MERGED' and
-                    utils.concat_when_all_truthy({ 'Merged  at: ', json_res[i].merged_at, '\n' }) ..
-                    utils.concat_when_all_truthy({ 'Merged  by: ', json_res[i].merged_by.username, '' }) ..
-                    utils.concat_when_all_truthy({ ' (', json_res[i].merged_by.name, ')' }) .. '\n'
-                    or
-                    utils.concat_when_all_truthy({ 'Closed  at: ', json_res[i].closed_at, '\n' })
-                ) ..
-                utils.concat_when_all_truthy({ json_res[i].description, '' }),
-        }
-    end
-    return items
 end
 
 -- TODO: refactor this function
@@ -76,36 +42,92 @@ local function default_gitlab_mr_or_issue_configure_score_offset(items)
     end
 end
 
-local default_gitlab_mention_separate_output = function(output)
-    --- @type blink-cmp-git.CompletionItem[]
-    local items = {}
-    local json_res = utils.json_decode(output)
-    for i = 1, #json_res do
-        items[i] = {
-            label = utils.concat_when_all_truthy({ '@', json_res[i].username }),
-            insert_text = utils.concat_when_all_truthy({ '@', json_res[i].username }),
-            kind_name = 'Mention',
-            documentation = {
-                get_command = 'glab',
-                get_command_args = {
-                    'api',
-                    'users/' .. tostring(json_res[i].id),
-                },
-                ---@diagnostic disable-next-line: redefined-local
-                resolve_documentation = function(output)
-                    local user_info = utils.json_decode(output)
-                    return
-                        utils.concat_when_all_truthy({ user_info.username, '' }) ..
-                        utils.concat_when_all_truthy({ ' (', user_info.name, ')' }) .. '\n' ..
-                        utils.concat_when_all_truthy({ 'Location: ', user_info.location, '\n' }) ..
-                        utils.concat_when_all_truthy({ 'Email: ', user_info.public_email, '\n' }) ..
-                        utils.concat_when_all_truthy({ 'Company: ', user_info.work_information, '\n' }) ..
-                        utils.concat_when_all_truthy({ 'Created at: ', user_info.created_at, '\n' })
-                end
-            }
-        }
-    end
-    return items
+local function default_gitlab_issue_get_label(item)
+    return utils.concat_when_all_true('#', item.iid, ' ', item.title, '')
+end
+
+local function default_gitlab_issue_get_kind_name(_)
+    return 'Issue'
+end
+
+local function default_gitlab_issue_get_insert_text(item)
+    return utils.concat_when_all_true('#', item.iid, '')
+end
+
+local function default_gitlab_issue_get_documentation(item)
+    return
+        utils.concat_when_all_true('#', item.iid, ' ', item.title, '\n') ..
+        utils.concat_when_all_true('State: ', item.state, '\n') ..
+        utils.concat_when_all_true('Author: ', item.author.username, '') ..
+        utils.concat_when_all_true(' (', item.author.name, ')') .. '\n' ..
+        utils.concat_when_all_true('Created at: ', item.created_at, '\n') ..
+        utils.concat_when_all_true('Updated at: ', item.updated_at, '\n') ..
+        utils.concat_when_all_true('Closed  at: ', item.closed_at, '\n') ..
+        utils.concat_when_all_true(item.description, '')
+end
+
+local function default_gitlab_mr_get_label(item)
+    return utils.concat_when_all_true('!', item.iid, ' ', item.title, '')
+end
+
+local function default_gitlab_mr_get_kind_name(_)
+    return 'MR'
+end
+
+local function default_gitlab_mr_get_insert_text(item)
+    return utils.concat_when_all_true('!', item.iid, '')
+end
+
+local function default_gitlab_mr_get_documentation(item)
+    return
+        utils.concat_when_all_true('!', item.iid, ' ', item.title, '\n') ..
+        utils.concat_when_all_true('State: ', item.state, '\n') ..
+        utils.concat_when_all_true('Author: ', item.author.username, '') ..
+        utils.concat_when_all_true(' (', item.author.name, ')') .. '\n' ..
+        utils.concat_when_all_true('Created at: ', item.created_at, '\n') ..
+        utils.concat_when_all_true('Updated at: ', item.updated_at, '\n') ..
+        (
+            item.state == 'MERGED' and
+            utils.concat_when_all_true('Merged  at: ', item.merged_at, '\n') ..
+            utils.concat_when_all_true('Merged  by: ', item.merged_by.username, '') ..
+            utils.concat_when_all_true(' (', item.merged_by.name, ')') .. '\n'
+            or
+            utils.concat_when_all_true('Closed  at: ', item.closed_at, '\n')
+        ) ..
+        utils.concat_when_all_true(item.description, '')
+end
+
+local function default_gitlab_mention_get_label(item)
+    return utils.concat_when_all_true('@', item.username, '')
+end
+
+local function default_gitlab_mention_get_kind_name(_)
+    return 'Mention'
+end
+
+local function default_gitlab_mention_get_insert_text(item)
+    return utils.concat_when_all_true('@', item.username, '')
+end
+
+local function default_gitlab_mention_get_documentation(item)
+    return {
+        get_command = 'glab',
+        get_command_args = {
+            'api',
+            'users/' .. tostring(item.id),
+        },
+        ---@diagnostic disable-next-line: redefined-local
+        resolve_documentation = function(output)
+            local user_info = utils.json_decode(output)
+            return
+                utils.concat_when_all_true(user_info.username, '') ..
+                utils.concat_when_all_true(' (', user_info.name, ')') .. '\n' ..
+                utils.concat_when_all_true('Location: ', user_info.location, '\n') ..
+                utils.concat_when_all_true('Email: ', user_info.public_email, '\n') ..
+                utils.concat_when_all_true('Company: ', user_info.work_information, '\n') ..
+                utils.concat_when_all_true('Created at: ', user_info.created_at, '\n')
+        end
+    }
 end
 
 --- @type blink-cmp-git.GCSOptions
@@ -121,11 +143,13 @@ return {
             '--output', 'json',
         },
         insert_text_trailing = ' ',
-        separate_output = function(output)
-            return default_gitlab_mr_or_issue_separate_output(output, false)
-        end,
+        separate_output = common.json_array_separator,
+        get_label = default_gitlab_issue_get_label,
+        get_kind_name = default_gitlab_issue_get_kind_name,
+        get_insert_text = default_gitlab_issue_get_insert_text,
+        get_documentation = default_gitlab_issue_get_documentation,
         configure_score_offset = default_gitlab_mr_or_issue_configure_score_offset,
-        on_error = require('blink-cmp-git.default.common').default_on_error,
+        on_error = common.default_on_error,
     },
     pull_request = {
         enable = default_gitlab_enable,
@@ -138,11 +162,13 @@ return {
             '--output', 'json',
         },
         insert_text_trailing = ' ',
-        separate_output = function(output)
-            return default_gitlab_mr_or_issue_separate_output(output, true)
-        end,
+        separate_output = common.json_array_separator,
+        get_label = default_gitlab_mr_get_label,
+        get_kind_name = default_gitlab_mr_get_kind_name,
+        get_insert_text = default_gitlab_mr_get_insert_text,
+        get_documentation = default_gitlab_mr_get_documentation,
         configure_score_offset = default_gitlab_mr_or_issue_configure_score_offset,
-        on_error = require('blink-cmp-git.default.common').default_on_error,
+        on_error = common.default_on_error,
     },
     mention = {
         enable = default_gitlab_enable,
@@ -153,8 +179,12 @@ return {
             'projects/:id/users',
         },
         insert_text_trailing = ' ',
-        separate_output = default_gitlab_mention_separate_output,
-        configure_score_offset = require('blink-cmp-git.default.common').score_offset_origin,
-        on_error = require('blink-cmp-git.default.common').default_on_error,
+        separate_output = common.json_array_separator,
+        get_label = default_gitlab_mention_get_label,
+        get_kind_name = default_gitlab_mention_get_kind_name,
+        get_insert_text = default_gitlab_mention_get_insert_text,
+        get_documentation = default_gitlab_mention_get_documentation,
+        configure_score_offset = common.score_offset_origin,
+        on_error = common.default_on_error,
     },
 }

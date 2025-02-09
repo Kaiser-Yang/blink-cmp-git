@@ -59,12 +59,14 @@ function M.json_decode(str, opts)
     return vim.json.decode(str, opts)
 end
 
-function M.concat_when_all_truthy(args)
-    for i = 1, #args do
-        if not args[i] then
+function M.concat_when_all_true(...)
+    local args = {}
+    for i = 1, select('#', ...) do
+        local arg = select(i, ...)
+        if not arg then
             return ''
         end
-        args[i] = tostring(args[i])
+        table.insert(args, tostring(arg))
     end
     return table.concat(args, '')
 end
