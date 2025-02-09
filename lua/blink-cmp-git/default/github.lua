@@ -1,4 +1,3 @@
-local Job = require('plenary.job')
 local utils = require('blink-cmp-git.utils')
 
 local function default_github_enable()
@@ -13,22 +12,26 @@ local function default_github_pr_or_issue_separate_output(output, is_pr)
     local json_res = utils.json_decode(output)
     for i = 1, #json_res do
         items[i] = {
-            label = '#' .. tostring(json_res[i].number) ..
-                ' ' .. tostring(json_res[i].title),
-            insert_text = '#' .. tostring(json_res[i].number),
+            label = utils.concat_when_all_truthy({ '#', json_res[i].number, ' ', json_res[i].title }),
+            insert_text = utils.concat_when_all_truthy({ '#', json_res[i].number }),
             kind_name = is_pr and 'PR' or 'Issue',
             documentation =
-                '#' .. tostring(json_res[i].number) ..
-                ' ' .. tostring(json_res[i].title) .. '\n' ..
-                'State: ' .. tostring(json_res[i].state) .. '\n' ..
-                ((is_pr or not utils.truthy(tostring(json_res[i].stateReason))) and '' or
-                    'State Reason: ' .. tostring(json_res[i].stateReason) .. '\n') ..
-                'Author: ' .. tostring(json_res[i].author.login) ..
-                ' ' .. tostring(json_res[i].author.name) .. '\n' ..
-                'Created at: ' .. tostring(json_res[i].createdAt) .. '\n' ..
-                'Updated at: ' .. tostring(json_res[i].updatedAt) .. '\n' ..
-                'Closed at: ' .. tostring(json_res[i].closedAt) .. '\n' ..
-                tostring(json_res[i].body)
+                utils.concat_when_all_truthy({ '#', json_res[i].number, ' ', json_res[i].title, '\n' }) ..
+                utils.concat_when_all_truthy({ 'State: ', json_res[i].state, '\n' }) ..
+                utils.concat_when_all_truthy({ 'State Reason: ', json_res[i].stateReason, '\n' }) ..
+                utils.concat_when_all_truthy({ 'Author: ', json_res[i].author.login, '' }) ..
+                utils.concat_when_all_truthy({ ' (', json_res[i].author.name, ')' }) .. '\n' ..
+                utils.concat_when_all_truthy({ 'Created at: ', json_res[i].createdAt, '\n' }) ..
+                utils.concat_when_all_truthy({ 'Updated at: ', json_res[i].updatedAt, '\n' }) ..
+                (
+                    json_res[i].state == 'MERGED' and
+                    utils.concat_when_all_truthy({ 'Merged  at: ', json_res[i].mergedAt, '\n' }) ..
+                    utils.concat_when_all_truthy({ 'Merged  by: ', json_res[i].mergedBy.login, '' }) ..
+                    utils.concat_when_all_truthy({ ' (', json_res[i].mergedBy.name, ')' }) .. '\n'
+                    or
+                    utils.concat_when_all_truthy({ 'Closed  at: ', json_res[i].closedAt, '\n' })
+                ) ..
+                utils.concat_when_all_truthy({ json_res[i].body, '' }),
         }
     end
     return items
@@ -76,8 +79,8 @@ local function default_github_mention_separate_output(output)
     local items = {}
     for i = 1, #json_res do
         items[i] = {
-            label = '@' .. tostring(json_res[i].login),
-            insert_text = '@' .. tostring(json_res[i].login),
+            label = utils.concat_when_all_truthy({ '@', json_res[i].login }),
+            insert_text = utils.concat_when_all_truthy({ '@', json_res[i].login }),
             kind_name = 'Mention',
             documentation = {
                 get_command = 'gh',
@@ -89,12 +92,12 @@ local function default_github_mention_separate_output(output)
                 resolve_documentation = function(output)
                     local user_info = utils.json_decode(output)
                     return
-                        tostring(user_info.login) ..
-                        ' (' .. tostring(user_info.name) .. ')\n' ..
-                        'Location: ' .. tostring(user_info.location) .. '\n' ..
-                        'Email: ' .. tostring(user_info.email) .. '\n' ..
-                        'Company: ' .. tostring(user_info.company) .. '\n' ..
-                        'Created at: ' .. tostring(user_info.created_at) .. '\n'
+                        utils.concat_when_all_truthy({ user_info.login, '' }) ..
+                        utils.concat_when_all_truthy({ ' (', user_info[i].name, ')' }) .. '\n' ..
+                        utils.concat_when_all_truthy({ 'Location: ', user_info.location, '\n' }) ..
+                        utils.concat_when_all_truthy({ 'Email: ', user_info.email, '\n' }) ..
+                        utils.concat_when_all_truthy({ 'Company: ', user_info.company, '\n' }) ..
+                        utils.concat_when_all_truthy({ 'Created at: ', user_info.created_at, '\n' })
                 end
             }
         }
@@ -129,7 +132,7 @@ return {
             'pr',
             'list',
             '--state', 'all',
-            '--json', 'number,title,state,body,createdAt,updatedAt,closedAt,author',
+            '--json', 'number,title,state,body,createdAt,updatedAt,closedAt,mergedAt,mergedBy,author',
         },
         insert_text_trailing = ' ',
         separate_output = function(output)
