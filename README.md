@@ -127,7 +127,7 @@ will use the first repository's result. To solve this problem, there is a comman
 reload the cache: `BlinkCmpGitReloadCache`. This command will clear all the cache and if
 `use_items_pre_cache` is enabled (default to `true`), it will pre-cache again.
 
-You can bind the command to a key or create a vim autocommand to reload the cache when your
+You can bind the command to a key or create a vim auto command to reload the cache when your
 `cwd` changes.
 
 > [!NOTE]
@@ -153,19 +153,23 @@ See [default.lua](./lua/blink-cmp-git/default/init.lua).
 Because all features have same fields, I'll use `commit` as an example.
 
 The `blink-cmp-git` will first run command from `get_command` and `get_command_args`. The standout
-of the command will be passed to `separate_output`. So if you want to customize the completion items,
-you should be aware of what the output of your command looks like.
+of the command will be passed to `separate_output`. So if you want to customize the completion 
+items, you should be aware of what the output of your command looks like.
 
 The default `get_command` and `get_command_args` for `commit`:
 
 ```lua
-get_command = 'git',
-get_command_args = {
-    '--no-pager',
-    'log',
-    '--pretty=fuller',
-    '--decorate=no',
-},
+git_centers = {
+    commit = {
+        get_command = 'git',
+        get_command_args = {
+            '--no-pager',
+            'log',
+            '--pretty=fuller',
+            '--decorate=no',
+        },
+    }
+}
 ```
 
 This will give you the output like:
@@ -192,58 +196,84 @@ CommitDate: Sun Jan 12 14:27:39 2025 +0800
 The default `separate_output` for `commit`:
 
 ```lua
-separate_output = function(output)
-    local lines = vim.split(output, '\n')
-    local i = 1
-    local commits = {}
-    -- Those below separate the output to a list of commits
-    -- I've tried use regex to match the commit, but there always were missing some commits
-    while i < #lines do
-        local j = i + 1
-        while j < #lines do
-            if lines[j]:match('^commit ') then
-                j = j - 1
-                break
+git_centers = {
+    commit = {
+    separate_output = function(output)
+        local lines = vim.split(output, '\n')
+        local i = 1
+        local commits = {}
+        -- Those below separate the output to a list of commits
+        -- I've tried use regex to match the commit, but there always were missing some commits
+        while i < #lines do
+            local j = i + 1
+            while j < #lines do
+                if lines[j]:match('^commit ') then
+                    j = j - 1
+                    break
+                end
+                j = j + 1
             end
-            j = j + 1
+            commits[#commits + 1] = table.concat(lines, '\n', i, j)
+            i = j + 1
         end
-        commits[#commits + 1] = table.concat(lines, '\n', i, j)
-        i = j + 1
-    end
-    --- @type blink-cmp-git.CompletionItem[]
-    local items = {}
-    ---@diagnostic disable-next-line: redefined-local
-    for i = 1, #commits do
-        --- @type string
-        local commit = commits[i]
-        items[i] = {
-            -- label is what to show in the completion menu
-            -- the first 7 characters of the hash and the subject of the commit
-            label =
-                commit:match('commit ([^\n]*)'):sub(1, 7)
-                ..
-                ' '
-                ..
-                commit:match('\n\n%s*([^\n]*)'),
-            kind_name = 'Commit',
-            -- insert_text is what to insert when you select or accept the item
-            insert_text = commit:match('^commit ([^\n]*)'):sub(1, 7) .. ' ',
-            -- this can be a `DocumentationCommand` or a string
-            -- set this to nil if you don't want to show the documentation
-            -- use the whole commit as the documentation
-            documentation = commit
-            -- documentation = {
+        return commits
+    end,
+    }
+}
+```
+
+In most situations, you don't need to change the `separate_output`, but you should be aware of each
+item of the `separate_output`'s return values. The default `separate_output` for commit returns an
+array of strings, each string looks like below:
+
+```gitcommit
+commit 0216336d8ff00d7b8c9304b23bcca31cbfcdf2c8
+Author:     Kaiser-Yang <624626089@qq.com>
+AuthorDate: Sun Jan 12 14:40:38 2025 +0800
+Commit:     Kaiser-Yang <624626089@qq.com>
+CommitDate: Sun Jan 12 14:43:15 2025 +0800
+
+    Cache empty documentations
+
+```
+
+Then, `blink-cmp-git` will call `get_lable`, `get_kind_name`, `get_insert_text` and
+`get_documentation` for each item. You just need to customize those functions to customize the
+completion items.
+
+The default getters for `commit`:
+
+```lua
+git_centers = {
+    commit = {
+        -- use the first 7 hash and the first line of the commit message as the label
+        get_label = function(item)
+            return item:match('commit ([^\n]*)'):sub(1, 7) .. ' ' .. item:match('\n\n%s*([^\n]*)')
+        end,
+        -- use 'Commit' as the kind name
+        get_kind_name = function(_)
+            return 'Commit'
+        end,
+        -- use the first 7 hash as the insert text
+        get_insert_text = function(item)
+            return item:match('commit ([^\n]*)'):sub(1, 7)
+        end,
+        -- use the whole commit message as the documentation
+        get_documentation = function(item)
+            return item
+            -- or you can use `blink-cmp-git.DocumentationCommand` to get the documentation
+            -- return {
             --     -- the command to get the documentation
             --     get_command = '',
             --     get_command_args = {}
             --     -- how to resolve the output
             --     resolve_documentation = function(output) return output end
             -- }
+            -- or set it to nil to disable the documentation
             -- documentation = nil
-        }
-    end
-    return items
-end,
+        end,
+    }
+}
 ```
 
 > [!NOTE]
@@ -298,8 +328,8 @@ available for you to customize the highlight. By default, `blink-cmp-git` will u
 those below:
 
 ```lua
--- `Commit` is from the `separate_output` function
--- The `kind_name` for default `separate_output` are `Commit`, `Issue`, `PR` and 'Mention'.
+-- `Commit` is from the `get_kind_name` function
+-- The `kind_name` for default are `Commit`, `Issue`, `PR`, `MR` and 'Mention'.
 -- If you customize the `separate_output`, you should update `Commit` with your `kind_name`
 vim.api.nvim_set_hl(0, 'BlinkCmpKind' .. 'Commit', { default = false, bg = 'red' })
 ```
@@ -308,37 +338,17 @@ vim.api.nvim_set_hl(0, 'BlinkCmpKind' .. 'Commit', { default = false, bg = 'red'
 
 I'll give you the example for pull requests. You can do the same for issues.
 
-Firstly, you should update the `separate_output` to customize the `kind_name`:
+Firstly, you should update the `get_kind_name` to customize the `kind_name`:
 
 ```lua
 git_centers = {
     github = {
         pull_request = {
-            separate_output = function(output)
-                --- @type blink-cmp-git.CompletionItem[]
-                local items = {}
-                local json_res = require('blink-cmp-git.utils').json_decode(output)
-                for i = 1, #json_res do
-                    items[i] = {
-                        label = '#' .. tostring(json_res[i].number) ..
-                            ' ' .. tostring(json_res[i].title),
-                        insert_text = '#' .. tostring(json_res[i].number),
-                        -- OPENPR
-                        -- CLOSEDPR
-                        -- MERGEDPR
-                        kind_name = tostring(json_res[i].state) .. 'PR',
-                        documentation =
-                            '#' .. tostring(json_res[i].number) ..
-                            ' ' .. tostring(json_res[i].title) .. '\n' ..
-                            'State: ' .. tostring(json_res[i].state) .. '\n' ..
-                            'Author: ' .. tostring(json_res[i].author.login) .. '\n' ..
-                            'Created at: ' .. tostring(json_res[i].createdAt) .. '\n' ..
-                            'Updated at: ' .. tostring(json_res[i].updatedAt) .. '\n' ..
-                            'Closed  at: ' .. tostring(json_res[i].closedAt) .. '\n' ..
-                            tostring(json_res[i].body)
-                    }
-                end
-                return items
+            get_kind_name = function(item)
+                -- OPENPR
+                -- CLOSEDPR
+                -- MERGEDPR
+                return tostring(item.state) .. 'PR',
             end,
         }
     }
