@@ -22,6 +22,10 @@ local function create_job_from_documentation_command(documentation_command)
     return Job:new({
         command = utils.get_option(documentation_command.get_command),
         args = utils.get_option(documentation_command.get_command_args),
+        env = {
+            CLICOLOR = '0',
+            PAGER = '',
+        }
     })
 end
 
@@ -51,6 +55,10 @@ local function create_job_from_feature(feature, items)
     return Job:new({
         command = cmd,
         args = cmd_args,
+        env = {
+            CLICOLOR = '0',
+            PAGER = '',
+        },
         on_exit = function(j, return_value, signal)
             if signal == 9 then
                 return
