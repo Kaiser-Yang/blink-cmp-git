@@ -39,6 +39,7 @@ return {
         Commit = '',
         Mention = '',
         PR = '',
+        MR = '',
         Issue = '',
     },
     commit = require('blink-cmp-git.default.commit'),

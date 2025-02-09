@@ -16,7 +16,11 @@
 --- @field get_command? string|fun(): string
 --- @field get_command_args? string[]|fun(): string[]
 --- @field insert_text_trailing? string|fun(): string
---- @field separate_output? fun(output: string): blink-cmp-git.CompletionItem[]
+--- @field separate_output? fun(output: string): any[]
+--- @field get_label? fun(item: any): string
+--- @field get_kind_name? fun(item: any): string
+--- @field get_insert_text? fun(item: any): string
+--- @field get_documentation? fun(item: any): string|blink-cmp-git.DocumentationCommand
 --- @field configure_score_offset? fun(items: blink-cmp-git.CompletionItem[])
 --- @field on_error? fun(return_value: number, standard_error: string): boolean
 

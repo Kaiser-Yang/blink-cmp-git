@@ -46,6 +46,23 @@ local function get_text_edit_range(context)
 end
 
 --- @param feature blink-cmp-git.GCSCompletionOptions
+--- @param result string[]
+--- @return blink-cmp-git.CompletionItem[]
+local function assemble_completion_items_from_output(feature, result)
+    local items = {}
+    for i, v in ipairs( feature.separate_output(table.concat(result, '\n'))) do
+        items[i] = {
+            label = feature.get_label(v),
+            kind_name = feature.get_kind_name(v),
+            insert_text = feature.get_insert_text(v),
+            documentation = feature.get_documentation(v),
+        }
+    end
+    feature.configure_score_offset(items)
+    return items
+end
+
+--- @param feature blink-cmp-git.GCSCompletionOptions
 --- @param items table
 --- @return Job
 local function create_job_from_feature(feature, items)
@@ -69,8 +86,7 @@ local function create_job_from_feature(feature, items)
                 end
             end
             if utils.truthy(j:result()) then
-                local match_list = feature.separate_output(table.concat(j:result(), '\n'))
-                feature.configure_score_offset(match_list)
+                local match_list = assemble_completion_items_from_output(feature, j:result())
                 vim.iter(match_list):each(function(match)
                     items[match] = {
                         label = match.label,
@@ -428,6 +444,9 @@ function GitSource:resolve(item, callback)
         return
     end
     if type(item.documentation) == 'string' or not item.documentation then
+        if item.documentation and item.documentation:match('^%s*$') then
+            item.documentation = ''
+        end
         if use_items_cache then
             -- cache empty string
             self.cache:set({ trigger, item.label, 'documentation' }, item.documentation or '')
@@ -445,6 +464,9 @@ function GitSource:resolve(item, callback)
             item.documentation =
             ---@diagnostic disable-next-line: undefined-field
                 item.documentation.resolve_documentation(table.concat(job:result(), '\n'))
+            if item.documentation and item.documentation:match('^%s*$') then
+                item.documentation = ''
+            end
         else
             item.documentation = nil
         end
