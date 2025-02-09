@@ -348,7 +348,7 @@ git_centers = {
                 -- OPENPR
                 -- CLOSEDPR
                 -- MERGEDPR
-                return tostring(item.state) .. 'PR',
+                return item.state .. 'PR',
             end,
         }
     }

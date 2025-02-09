@@ -94,7 +94,7 @@ local function default_github_mention_get_documentation(item)
         get_command = 'gh',
         get_command_args = {
             'api',
-            'users/' .. tostring(item.login),
+            'users/' .. item.login,
         },
         resolve_documentation = function(output)
             local user_info = utils.json_decode(output)
