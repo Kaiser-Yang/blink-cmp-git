@@ -119,6 +119,7 @@ local function default_gitlab_mention_get_documentation(item)
         ---@diagnostic disable-next-line: redefined-local
         resolve_documentation = function(output)
             local user_info = utils.json_decode(output)
+            utils.remove_empty_string_value(user_info)
             return
                 utils.concat_when_all_true(user_info.username, '') ..
                 utils.concat_when_all_true(' (', user_info.name, ')') .. '\n' ..
