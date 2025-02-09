@@ -38,6 +38,7 @@ return {
     end,
     json_array_separator = function(output)
         local items = utils.json_decode(output)
+        utils.remove_empty_string_value(items)
         vim.iter(items):each(function(item)
             item.state = item.state == 'opened' and 'OPEN' or
                 item.state == 'closed' and 'CLOSED' or

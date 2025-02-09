@@ -9,6 +9,16 @@ function M.get_option(opt, ...)
     end
 end
 
+function M.remove_empty_string_value(tbl)
+    for key, value in pairs(tbl) do
+        if type(value) == 'table' then
+            M.remove_empty_string_value(value)
+        elseif type(value) == 'string' and value == '' then
+            tbl[key] = nil
+        end
+    end
+end
+
 function M.truthy(value)
     if type(value) == 'boolean' then
         return value
