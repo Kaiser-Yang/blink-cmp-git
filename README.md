@@ -18,7 +18,13 @@ Use `@` to search for users:
 
 ## Requirements
 
-`gh` is required for the default configuration.
+`git` is required for default configurations.
+
+`gh` is required for the `github` related features.
+
+`glab` is required for the `gitlab` related features.
+
+Run `checkhealth blink-cmp-git` to check the requirements.
 
 ## Installation
 

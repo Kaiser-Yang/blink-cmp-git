@@ -1,41 +1,42 @@
-local Job = require('plenary.job')
 local utils = require('blink-cmp-git.utils')
 
-local function default_github_enable()
-    if vim.fn.executable('git') == 0 or vim.fn.executable('gh') == 0 then return false end
-    return utils.remote_url_contain('github.com')
+local default_gitlab_enable = function()
+    if vim.fn.executable('git') == 0 or vim.fn.executable('glab') == 0 then return false end
+    return utils.remote_url_contain('gitlab.com')
 end
 
 -- TODO: refactor this function
-local function default_github_pr_or_issue_separate_output(output, is_pr)
+local default_gitlab_mr_or_issue_separate_output = function(output, is_mr)
     --- @type blink-cmp-git.CompletionItem[]
     local items = {}
     local json_res = vim.json.decode(output)
     for i = 1, #json_res do
+        json_res[i].state = json_res[i].state == 'opened' and 'OPEN' or
+            json_res[i].state == 'closed' and 'CLOSED' or
+            json_res[i].state == 'merged' and 'MERGED' or
+            json_res[i].state
         items[i] = {
-            label = '#' .. tostring(json_res[i].number) ..
+            label = (is_mr and '!' or '#') .. tostring(json_res[i].iid) ..
                 ' ' .. tostring(json_res[i].title),
-            insert_text = '#' .. tostring(json_res[i].number),
-            kind_name = is_pr and 'PR' or 'Issue',
+            insert_text = (is_mr and '!' or '#') .. tostring(json_res[i].iid),
+            kind_name = is_mr and 'PR' or 'Issue',
             documentation =
-                '#' .. tostring(json_res[i].number) ..
+                '#' .. tostring(json_res[i].iid) ..
                 ' ' .. tostring(json_res[i].title) .. '\n' ..
                 'State: ' .. tostring(json_res[i].state) .. '\n' ..
-                ((is_pr or not utils.truthy(tostring(json_res[i].stateReason))) and '' or
-                    'State Reason: ' .. tostring(json_res[i].stateReason) .. '\n') ..
-                'Author: ' .. tostring(json_res[i].author.login) ..
+                'Author: ' .. tostring(json_res[i].author.username) ..
                 ' ' .. tostring(json_res[i].author.name) .. '\n' ..
-                'Created at: ' .. tostring(json_res[i].createdAt) .. '\n' ..
-                'Updated at: ' .. tostring(json_res[i].updatedAt) .. '\n' ..
-                'Closed at: ' .. tostring(json_res[i].closedAt) .. '\n' ..
-                tostring(json_res[i].body)
+                'Created at: ' .. tostring(json_res[i].created_at) .. '\n' ..
+                'Updated at: ' .. tostring(json_res[i].updated_at) .. '\n' ..
+                'Closed at: ' .. tostring(json_res[i].closed_at) .. '\n' ..
+                tostring(json_res[i].description)
         }
     end
     return items
 end
 
 -- TODO: refactor this function
-local function default_github_pr_or_issue_configure_score_offset(items)
+local function default_gitlab_mr_or_issue_configure_score_offset(items)
     -- Bonus to make sure items sorted as below:
     -- open issue, open pr, closed issue, merged pr, closed pr
     local keys = {
@@ -70,30 +71,30 @@ local function default_github_pr_or_issue_configure_score_offset(items)
     end
 end
 
-local function default_github_mention_separate_output(output)
-    local json_res = vim.json.decode(output)
+local default_gitlab_mention_separate_output = function(output)
     --- @type blink-cmp-git.CompletionItem[]
     local items = {}
+    local json_res = vim.json.decode(output)
     for i = 1, #json_res do
         items[i] = {
-            label = '@' .. tostring(json_res[i].login),
-            insert_text = '@' .. tostring(json_res[i].login),
+            label = '@' .. tostring(json_res[i].username),
+            insert_text = '@' .. tostring(json_res[i].username),
             kind_name = 'Mention',
             documentation = {
-                get_command = 'gh',
+                get_command = 'glab',
                 get_command_args = {
                     'api',
-                    'users/' .. tostring(json_res[i].login),
+                    'users/' .. tostring(json_res[i].id),
                 },
                 ---@diagnostic disable-next-line: redefined-local
                 resolve_documentation = function(output)
                     local user_info = vim.json.decode(output)
                     return
-                        tostring(user_info.login) ..
+                        tostring(user_info.username) ..
                         ' ' .. tostring(user_info.name) .. '\n' ..
                         'Location: ' .. tostring(user_info.location) .. '\n' ..
-                        'Email: ' .. tostring(user_info.email) .. '\n' ..
-                        'Company: ' .. tostring(user_info.company) .. '\n' ..
+                        'Email: ' .. tostring(user_info.public_email) .. '\n' ..
+                        'Company: ' .. tostring(user_info.work_information) .. '\n' ..
                         'Created at: ' .. tostring(user_info.created_at) .. '\n'
                 end
             }
@@ -105,49 +106,49 @@ end
 --- @type blink-cmp-git.GCSOptions
 return {
     issue = {
-        enable = default_github_enable,
+        enable = default_gitlab_enable,
         triggers = { '#' },
-        get_command = 'gh',
+        get_command = 'glab',
         get_command_args = {
             'issue',
             'list',
-            '--state', 'all',
-            '--json', 'number,title,state,stateReason,body,createdAt,updatedAt,closedAt,author',
+            '--all',
+            '--output', 'json',
         },
         insert_text_trailing = ' ',
         separate_output = function(output)
-            return default_github_pr_or_issue_separate_output(output, false)
+            return default_gitlab_mr_or_issue_separate_output(output, false)
         end,
-        configure_score_offset = default_github_pr_or_issue_configure_score_offset,
+        configure_score_offset = default_gitlab_mr_or_issue_configure_score_offset,
         on_error = require('blink-cmp-git.default.common').default_on_error,
     },
     pull_request = {
-        enable = default_github_enable,
-        triggers = { '#' },
-        get_command = 'gh',
+        enable = default_gitlab_enable,
+        triggers = { '!' },
+        get_command = 'glab',
         get_command_args = {
-            'pr',
+            'mr',
             'list',
-            '--state', 'all',
-            '--json', 'number,title,state,body,createdAt,updatedAt,closedAt,author',
+            '--all',
+            '--output', 'json',
         },
         insert_text_trailing = ' ',
         separate_output = function(output)
-            return default_github_pr_or_issue_separate_output(output, true)
+            return default_gitlab_mr_or_issue_separate_output(output, true)
         end,
-        configure_score_offset = default_github_pr_or_issue_configure_score_offset,
+        configure_score_offset = default_gitlab_mr_or_issue_configure_score_offset,
         on_error = require('blink-cmp-git.default.common').default_on_error,
     },
     mention = {
-        enable = default_github_enable,
+        enable = default_gitlab_enable,
         triggers = { '@' },
-        get_command = 'gh',
+        get_command = 'glab',
         get_command_args = {
             'api',
-            'repos/:owner/:repo/contributors',
+            'projects/:id/users',
         },
         insert_text_trailing = ' ',
-        separate_output = default_github_mention_separate_output,
+        separate_output = default_gitlab_mention_separate_output,
         configure_score_offset = require('blink-cmp-git.default.common').score_offset_origin,
         on_error = require('blink-cmp-git.default.common').default_on_error,
     },

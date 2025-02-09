@@ -1,4 +1,5 @@
 local M = {}
+local Job = require('plenary.job')
 
 function M.get_option(opt, ...)
     if type(opt) == 'function' then
@@ -33,6 +34,24 @@ function M.str(...)
         args[i] = type(args[i]) == 'string' and args[i] or vim.inspect(v)
     end
     return table.concat(args, ' ')
+end
+
+function M.remote_url_contain(content)
+    if vim.fn.executable('git') == 0 then return false end
+    local output = ''
+    ---@diagnostic disable-next-line: missing-fields
+    Job:new({
+        command = 'git',
+        args = { 'remote', '-v' },
+        cwd = vim.fn.getcwd(),
+        on_exit = function(job, return_value, _)
+            if return_value ~= 0 then
+                return
+            end
+            output = table.concat(job:result(), '\n')
+        end
+    }):sync()
+    return output:find(content) ~= nil
 end
 
 return M

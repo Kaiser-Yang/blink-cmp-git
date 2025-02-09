@@ -44,7 +44,6 @@ return {
     commit = require('blink-cmp-git.default.commit'),
     git_centers = {
         github = require('blink-cmp-git.default.github'),
-        -- TODO: this will be implemented in the future
-        gitlab = {}
+        gitlab = require('blink-cmp-git.default.gitlab'),
     }
 }

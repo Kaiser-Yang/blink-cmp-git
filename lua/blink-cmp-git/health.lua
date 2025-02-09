@@ -13,6 +13,7 @@ function M.check()
     health.start('blink-cmp-git')
     check_command_executable('git')
     check_command_executable('gh')
+    check_command_executable('glab')
 end
 
 return M

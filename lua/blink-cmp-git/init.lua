@@ -22,10 +22,10 @@ local function create_job_from_documentation_command(documentation_command)
     return Job:new({
         command = utils.get_option(documentation_command.get_command),
         args = utils.get_option(documentation_command.get_command_args),
-        env = {
+        env = vim.tbl_extend('force', vim.fn.environ(), {
             CLICOLOR = '0',
             PAGER = '',
-        }
+        }),
     })
 end
 
@@ -55,10 +55,10 @@ local function create_job_from_feature(feature, items)
     return Job:new({
         command = cmd,
         args = cmd_args,
-        env = {
+        env = vim.tbl_extend('force', vim.fn.environ(), {
             CLICOLOR = '0',
             PAGER = '',
-        },
+        }),
         on_exit = function(j, return_value, signal)
             if signal == 9 then
                 return
@@ -487,10 +487,4 @@ function GitSource:get_enabled_features()
     return result
 end
 
--- TODO: add highlight
--- vim.api.nvim_set_hl(0, 'BlinkCmpGit', { link = 'Search', default = true })
--- local highlight_ns_id = 0
--- pcall(function()
---     highlight_ns_id = require('blink.cmp.config').appearance.highlight_ns
--- end)
 return GitSource
