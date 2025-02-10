@@ -15,6 +15,7 @@ local function default_github_pr_or_issue_configure_score_offset(items)
         'OPENPR',
         'CLOSEDIssue',
         'MERGEDPR',
+        'DRAFTPR',
         'CLOSEDPR'
     }
     local bonus = 999999
@@ -27,7 +28,7 @@ local function default_github_pr_or_issue_configure_score_offset(items)
         if type(items[i].documentation) == 'string' then
             state = items[i].documentation:match('State: (%w*)')
         end
-        local bonus_key = state .. items[i].kind_name
+        local bonus_key = items[i].isDraft and 'DRAFTPR' or state .. items[i].kind_name
         if bonus_score[bonus_key] then
             items[i].score_offset = bonus_score[bonus_key]
         end
@@ -60,7 +61,7 @@ end
 
 local function default_github_pr_or_issue_get_documentation(item)
     return utils.concat_when_all_true('#', item.number, ' ', item.title, '\n') ..
-        utils.concat_when_all_true('State: ', item.state, '\n') ..
+        utils.concat_when_all_true('State: ', item.isDraft and 'DRAFT' or item.state, '\n') ..
         utils.concat_when_all_true('State Reason: ', item.stateReason, '\n') ..
         utils.concat_when_all_true('Author: ', item.author.login, '') ..
         utils.concat_when_all_true(' (', item.author.name, ')') .. '\n' ..
@@ -138,7 +139,7 @@ return {
             'pr',
             'list',
             '--state', 'all',
-            '--json', 'number,title,state,body,createdAt,updatedAt,closedAt,mergedAt,mergedBy,author',
+            '--json', 'number,title,state,body,createdAt,updatedAt,closedAt,mergedAt,mergedBy,author,isDraft',
         },
         insert_text_trailing = ' ',
         separate_output = common.json_array_separator,
