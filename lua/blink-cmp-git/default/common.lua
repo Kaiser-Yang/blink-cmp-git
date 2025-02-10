@@ -16,8 +16,7 @@ return {
     default_on_error = function(return_value, standard_error)
         if not utils.truthy(standard_error) then
             vim.schedule(function()
-                log.error('get_completions failed',
-                    '\n',
+                log.error('get_completions failed\n',
                     'with error code:', return_value)
             end)
             return true
@@ -37,14 +36,6 @@ return {
         return true
     end,
     json_array_separator = function(output)
-        local items = utils.json_decode(output)
-        utils.remove_empty_string_value(items)
-        vim.iter(items):each(function(item)
-            item.state = item.state == 'opened' and 'OPEN' or
-                item.state == 'closed' and 'CLOSED' or
-                item.state == 'merged' and 'MERGED' or
-                item.state
-        end)
-        return items
+        return utils.remove_empty_string_value(utils.json_decode(output))
     end,
 }

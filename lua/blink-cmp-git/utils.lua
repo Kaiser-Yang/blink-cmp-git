@@ -9,6 +9,23 @@ function M.get_option(opt, ...)
     end
 end
 
+--- @param command string
+--- @return boolean
+function M.command_found(command)
+    return vim.fn.executable(command) == 1
+end
+
+function M.get_repo_owner_and_repo()
+    local remote_url = M.get_repo_remote_origin_url()
+    local owner, repo
+    if remote_url:find('github.com') then
+        owner, repo = remote_url:match('github%.com[/:]([^/]+)/([^/]+)%.git')
+    elseif remote_url:find('gitlab.com') then
+        owner, repo = remote_url:match('gitlab%.com[/:]([^/]+)/([^/]+)%.git')
+    end
+    return owner .. '/' .. repo
+end
+
 function M.remove_empty_string_value(tbl)
     for key, value in pairs(tbl) do
         if type(value) == 'table' then
@@ -17,6 +34,7 @@ function M.remove_empty_string_value(tbl)
             tbl[key] = nil
         end
     end
+    return tbl
 end
 
 function M.truthy(value)
@@ -46,13 +64,13 @@ function M.str(...)
     return table.concat(args, ' ')
 end
 
-function M.remote_url_contain(content)
-    if vim.fn.executable('git') == 0 then return false end
+function M.get_repo_remote_origin_url()
+    if vim.fn.executable('git') == 0 then return '' end
     local output = ''
     ---@diagnostic disable-next-line: missing-fields
     Job:new({
         command = 'git',
-        args = { 'remote', '-v' },
+        args = { 'remote', 'get-url', 'origin' },
         cwd = vim.fn.getcwd(),
         on_exit = function(job, return_value, _)
             if return_value ~= 0 then
@@ -61,7 +79,7 @@ function M.remote_url_contain(content)
             output = table.concat(job:result(), '\n')
         end
     }):sync()
-    return output:find(content) ~= nil
+    return output
 end
 
 function M.json_decode(str, opts)
