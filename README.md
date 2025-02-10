@@ -333,8 +333,6 @@ vim.api.nvim_set_hl(0, 'BlinkCmpKind' .. 'Commit', { default = false, fg = '#a6e
 
 ### How to customize different icons for open, closed, and merged pull requests or issues?
 
-I'll give you the example for pull requests. You can do the same for issues.
-
 Firstly, you should update the `get_kind_name` to customize the `kind_name`:
 
 ```lua
@@ -342,14 +340,16 @@ git_centers = {
     github = {
         pull_request = {
             get_kind_name = function(item)
-                -- OPENPR
-                -- CLOSEDPR
-                -- MERGEDPR
-                -- for github isssue, item.stateReason is available,
-                -- you can use it to customize the kind_name (NOTPLANED, REOPENED, etc.)
-                return item.state .. 'PR',
+                -- OPENPR, CLOSEDPR, MERGEDPR, DRAFTPR
+                return item.isDraft and 'DRAFTPR' or item.state .. 'PR'
             end,
-        }
+        },
+        issue = {
+            get_kind_name = function(item)
+                -- OPENIssue, REOPENIssue, CONFIRMEDIssue, NOT_PLANEDIssue
+                return (item.stateReason or item.state) .. 'Issue'
+            end,
+        },
     }
 }
 ```
@@ -361,6 +361,11 @@ kind_icons = {
     OPENPR = '',
     CLOSEDPR = '',
     MERGEDPR = '',
+    DRAFTPR = '',
+    OPENIssue = '',
+    REOPENEDIssue = '',
+    COMPLETEDIssue = '',
+    NOT_PLANNEDIssue = '',
 }
 ```
 
@@ -369,16 +374,18 @@ see [How to customize the highlight?](#how-to-customize-the-highlight). Here is 
 `github`-like icons' highlight:
 
 ```lua
-local blink_cmp_git_highlight = {
+local blink_cmp_kind_name_highlight = {
     Commit = { default = false, fg = '#a6e3a1' },
     Mention = { default = false, fg = '#a6e3a1' },
     OPENPR = { default = false, fg = '#a6e3a1' },
     OPENIssue = { default = false, fg = '#a6e3a1' },
+    REOPENEDIssue = { default = false, fg = '#a6e3a1' },
     CLOSEDPR = { default = false, fg = '#f38ba8' },
     MERGEDPR = { default = false, fg = '#cba6f7' },
-    CLOSEDIssue = { default = false, fg = '#cba6f7' },
+    COMPLETEDIssue = { default = false, fg = '#cba6f7' },
+    DRAFTPR = { default = false, fg = '#9399b2' },
 }
-for kind_name, hl in pairs(blink_cmp_git_highlight) do
+for kind_name, hl in pairs(blink_cmp_kind_name_highlight) do
     vim.api.nvim_set_hl(0, 'BlinkCmpKind' .. kind_name, hl)
 end
 ```
@@ -389,19 +396,21 @@ expected. There is an example:
 ```lua
 local function github_pr_or_issue_configure_score_offset(items)
     -- Bonus to make sure items sorted as below:
-    -- open issue, open pr, closed issue, merged pr, closed pr
     local keys = {
         -- place `kind_name` here
-        'OPENIssue',
-        'OPENPR',
-        'CLOSEDIssue',
-        'MERGEDPR',
-        'CLOSEDPR'
+        { 'OPENIssue', 'REOPENEDIssue' },
+        { 'OPENPR' },
+        { 'COMPLETEDIssue' },
+        { 'DRAFTPR' },
+        { 'MERGEDPR' },
+        { 'CLOSEDPR',  'NOT_PLANNEDIssue' },
     }
     local bonus = 999999
     local bonus_score = {}
     for i = 1, #keys do
-        bonus_score[keys[i]] = bonus * (#keys - i)
+        for _, key in ipairs(keys[i]) do
+            bonus_score[key] = bonus * (#keys - i)
+        end
     end
     for i = 1, #items do
         local bonus_key = items[i].kind_name
