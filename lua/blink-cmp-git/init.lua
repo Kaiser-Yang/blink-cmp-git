@@ -18,10 +18,12 @@ local GitSource = {}
 --- @param documentation_command blink-cmp-git.DocumentationCommand
 --- @return Job
 local function create_job_from_documentation_command(documentation_command)
+    local command = utils.get_option(documentation_command.get_command)
+    local token = utils.get_option(documentation_command.get_token)
     ---@diagnostic disable-next-line: missing-fields
     return Job:new({
-        command = utils.get_option(documentation_command.get_command),
-        args = utils.get_option(documentation_command.get_command_args),
+        command = command,
+        args = utils.get_option(documentation_command.get_command_args, command, token),
         env = vim.tbl_extend('force', vim.fn.environ(), {
             CLICOLOR = '0',
             PAGER = '',
@@ -50,7 +52,7 @@ end
 --- @return blink-cmp-git.CompletionItem[]
 local function assemble_completion_items_from_output(feature, result)
     local items = {}
-    for i, v in ipairs( feature.separate_output(table.concat(result, '\n'))) do
+    for i, v in ipairs(feature.separate_output(table.concat(result, '\n'))) do
         items[i] = {
             label = feature.get_label(v),
             kind_name = feature.get_kind_name(v),
@@ -66,12 +68,12 @@ end
 --- @param items table
 --- @return Job
 local function create_job_from_feature(feature, items)
-    local cmd = utils.get_option(feature.get_command)
-    local cmd_args = utils.get_option(feature.get_command_args)
+    local command = utils.get_option(feature.get_command)
+    local token = utils.get_option(feature.get_token)
     ---@diagnostic disable-next-line: missing-fields
     return Job:new({
-        command = cmd,
-        args = cmd_args,
+        command = command,
+        args = utils.get_option(feature.get_command_args, command, token),
         env = vim.tbl_extend('force', vim.fn.environ(), {
             CLICOLOR = '0',
             PAGER = '',
@@ -444,6 +446,7 @@ function GitSource:resolve(item, callback)
         return
     end
     if type(item.documentation) == 'string' or not item.documentation then
+        ---@diagnostic disable-next-line: param-type-mismatch
         if item.documentation and item.documentation:match('^%s*$') then
             item.documentation = ''
         end
@@ -464,6 +467,7 @@ function GitSource:resolve(item, callback)
             item.documentation =
             ---@diagnostic disable-next-line: undefined-field
                 item.documentation.resolve_documentation(table.concat(job:result(), '\n'))
+            ---@diagnostic disable-next-line: param-type-mismatch
             if item.documentation and item.documentation:match('^%s*$') then
                 item.documentation = ''
             end

@@ -1,6 +1,7 @@
 --- @class (exact) blink-cmp-git.DocumentationCommand
+--- @field get_token? string|fun(): string
 --- @field get_command string|fun(): string
---- @field get_command_args string[]|fun(): string[]
+--- @field get_command_args string[]|fun(command:string, token: string): string[]
 --- @field resolve_documentation fun(output: string): string
 
 --- @class (exact) blink-cmp-git.CompletionItem
@@ -13,8 +14,9 @@
 --- @class (exact) blink-cmp-git.GCSCompletionOptions
 --- @field enable? boolean|fun(): boolean
 --- @field triggers? string[]|fun(): string[]
+--- @field get_token? string|fun(): string
 --- @field get_command? string|fun(): string
---- @field get_command_args? string[]|fun(): string[]
+--- @field get_command_args? string[]|fun(command:string, token: string): string[]
 --- @field insert_text_trailing? string|fun(): string
 --- @field separate_output? fun(output: string): any[]
 --- @field get_label? fun(item: any): string

@@ -57,6 +57,7 @@ end
 return {
     enable = default_commit_enable,
     triggers = { ':' },
+    get_token = '',
     get_command = 'git',
     get_command_args = {
         '--no-pager',

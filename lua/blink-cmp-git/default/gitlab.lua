@@ -2,8 +2,11 @@ local utils = require('blink-cmp-git.utils')
 local common = require('blink-cmp-git.default.common')
 
 local default_gitlab_enable = function()
-    if vim.fn.executable('git') == 0 or vim.fn.executable('glab') == 0 then return false end
-    return utils.remote_url_contain('gitlab.com')
+    if vim.fn.executable('git') == 0 or
+        vim.fn.executable('glab') == 0 and vim.fn.executable('curl') then
+        return false
+    end
+    return utils.get_repo_remote_origin_url():find('gitlab.com')
 end
 
 -- TODO: refactor this function
