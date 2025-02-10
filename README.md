@@ -2,7 +2,7 @@
 
 Git source for [blink.cmp](https://github.com/Saghen/blink.cmp)
 completion plugin. This makes it possible to query pull requests, issues,
-and users from GitHub. This is very useful when you are writing a commit with `nvim`.
+and users from GitHub or GitLab. This is very useful when you are writing a commit with `nvim`.
 
 Use `#` to search for issues and pull requests (`!` for `gitlab`'s merge requests):
 
@@ -127,20 +127,15 @@ will use the first repository's result. To solve this problem, there is a comman
 reload the cache: `BlinkCmpGitReloadCache`. This command will clear all the cache and if
 `use_items_pre_cache` is enabled (default to `true`), it will pre-cache again.
 
-You can bind the command to a key or create a vim auto command to reload the cache when your
-`cwd` changes.
+`blink-cmp-git` will create a auto command which uses `should_reload_cache` to determine
+whether or not to reload cache when entering a buffer.
+The default `should_reload_cache` will return `true` when `cwd` changed to another
+`git` repository.
 
 > [!NOTE]
 >
 > The command will be available only when the `blink-cmp-git` source is created. Usually,
 > the source will be created when it is enabled and you are in some mode you can input.
-
-> [!NOTE]
->
-> Since `v0.3.0`, `blink-cmp-git` will create a auto command which uses
-> `should_reload_cache` to determine whether or not to reload cache when entering a buffer.
-> The default `should_reload_cache` will return `true` when `cwd` changed to another
-> `git` repository.
 
 ## Default Configuration
 
@@ -223,7 +218,7 @@ git_centers = {
 ```
 
 In most situations, you don't need to change the `separate_output`, but you should be aware of each
-item of the `separate_output`'s return values. The default `separate_output` for commit returns an
+item of the `separate_output`'s return value. The default `separate_output` for commit returns an
 array of strings, each string looks like below:
 
 ```gitcommit
@@ -269,8 +264,8 @@ git_centers = {
             --     -- how to resolve the output
             --     resolve_documentation = function(output) return output end
             -- }
-            -- or set it to nil to disable the documentation
-            -- documentation = nil
+            -- or return nil to disable the documentation
+            -- return nil
         end,
     }
 }
@@ -281,7 +276,9 @@ git_centers = {
 > `kind_name` is used by those default options:
 >
 > * `git_centers.github.pr.configure_score_offset`
+> * `git_centers.gitlab.pr.configure_score_offset`
 > * `git_centers.github.issue.configure_score_offset`
+> * `git_centers.gitlab.issue.configure_score_offset`
 > * `kind_icons`
 >
 > Therefore, if you customize the `kind_name`, you should customize them too.
@@ -331,7 +328,7 @@ those below:
 -- `Commit` is from the `get_kind_name` function
 -- The `kind_name` for default are `Commit`, `Issue`, `PR`, `MR` and 'Mention'.
 -- If you customize the `separate_output`, you should update `Commit` with your `kind_name`
-vim.api.nvim_set_hl(0, 'BlinkCmpKind' .. 'Commit', { default = false, bg = 'red' })
+vim.api.nvim_set_hl(0, 'BlinkCmpKind' .. 'Commit', { default = false, fg = '#a6e3a1' })
 ```
 
 ### How to customize different icons for open, closed, and merged pull requests or issues?
@@ -348,6 +345,8 @@ git_centers = {
                 -- OPENPR
                 -- CLOSEDPR
                 -- MERGEDPR
+                -- for github isssue, item.stateReason is available,
+                -- you can use it to customize the kind_name (NOTPLANED, REOPENED, etc.)
                 return item.state .. 'PR',
             end,
         }
@@ -366,7 +365,23 @@ kind_icons = {
 ```
 
 You may need to update the highlight for the `kind_name`,
-see [How to customize the highlight?](#how-to-customize-the-highlight).
+see [How to customize the highlight?](#how-to-customize-the-highlight). Here is an example for
+`github`-like icons' highlight:
+
+```lua
+local blink_cmp_git_highlight = {
+    Commit = { default = false, fg = '#a6e3a1' },
+    Mention = { default = false, fg = '#a6e3a1' },
+    OPENPR = { default = false, fg = '#a6e3a1' },
+    OPENIssue = { default = false, fg = '#a6e3a1' },
+    CLOSEDPR = { default = false, fg = '#f38ba8' },
+    MERGEDPR = { default = false, fg = '#cba6f7' },
+    CLOSEDIssue = { default = false, fg = '#cba6f7' },
+}
+for kind_name, hl in pairs(blink_cmp_git_highlight) do
+    vim.api.nvim_set_hl(0, 'BlinkCmpKind' .. kind_name, hl)
+end
+```
 
 You may also need to update the `configure_score_offset`, otherwise the default may not work as you
 expected. There is an example:
