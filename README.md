@@ -181,7 +181,7 @@ of the command will be passed to `separate_output`. So if you want to customize 
 items, you should be aware of what the output of your command looks like.
 
 In most situations, you just need to customize
-`get_lable`, `get_kind_name`, `get_insert_text` and `get_documentation`. Before you customize them,
+`get_label`, `get_kind_name`, `get_insert_text` and `get_documentation`. Before you customize them,
 you should be aware of what the item looks like. See [item](/doc/item/) to know what them look like.
 The commit item looks like this below:
 
