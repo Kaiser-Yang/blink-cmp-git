@@ -1,5 +1,7 @@
 local Job = require('plenary.job')
 local utils = require('blink-cmp-git.utils')
+local log = require('blink-cmp-git.log')
+log.setup({ title = 'blink-cmp-git' })
 
 -- Get the absolute path of current git repo
 local function get_git_repo_absolute_path(path)
@@ -29,6 +31,10 @@ local function default_should_reload_cache()
     return false
 end
 
+local function default_before_reload_cache()
+    log.info('Start reloading blink-cmp-git cache.')
+end
+
 --- @type blink-cmp-git.Options
 return {
     async = true,
@@ -36,6 +42,7 @@ return {
     -- Whether or not cache the triggers when the source is loaded
     use_items_pre_cache = true,
     should_reload_cache = default_should_reload_cache,
+    before_reload_cache = default_before_reload_cache,
     kind_icons = {
         Commit = '',
         Mention = '',
