@@ -23,6 +23,9 @@ function M.get_repo_owner_and_repo()
     elseif remote_url:find('gitlab.com') then
         owner, repo = remote_url:match('gitlab%.com[/:]([^/]+)/([^/]+)%.git')
     end
+    if not owner or not repo then
+        return ''
+    end
     return owner .. '/' .. repo
 end
 
