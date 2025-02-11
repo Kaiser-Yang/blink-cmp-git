@@ -96,9 +96,11 @@ git = {
                 -- },
                 -- mention = {
                 --     get_token = function() return '' end,
-                --     get_documentation = {
-                --         get_token = function() return '' end,
-                --     },
+                --     get_documentation = function(item)
+                --         local default = require('blink-cmp-git.default.github').mention.get_documentation(item)
+                --         default.get_token = function() return '' end
+                --         return default
+                --     end
                 -- }
             },
             gitlab = {
@@ -115,9 +117,11 @@ git = {
                 -- },
                 -- mention = {
                 --     get_token = function() return '' end,
-                --     get_documentation = {
-                --         get_token = function() return '' end,
-                --     },
+                --     get_documentation = function(item)
+                --         local default = require('blink-cmp-git.default.gitlab').mention.get_documentation(item)
+                --         default.get_token = function() return '' end
+                --         return default
+                --     end
                 -- }
             }
         }
@@ -140,6 +144,9 @@ pre-cache when you enter insert mode or other mode you can input
 > * [issue](https://docs.github.com/en/rest/issues/issues?apiVersion=2022-11-28#list-repository-issues)
 > * [pull-request](https://docs.github.com/en/rest/pulls/pulls?apiVersion=2022-11-28#list-pull-requests)
 > * [mention](https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28#list-repository-contributors)
+>
+> For `gitlab` users, see [PAT](https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html)
+> to know how to get the token.
 
 ## Reload Cache
 
@@ -308,6 +315,23 @@ git_centers = {
                     (item.state_reason or item.state) .. 'Issue'
             end,
         },
+    },
+    gitlab = {
+        pull_request = {
+            get_kind_name = function(item)
+                -- openedPR, closedPR, mergedPR, draftPR, lockedPR
+                return item.discussion_locked and 'lockedPR' or
+                    item.draft and 'draftPR' or
+                    item.state .. 'PR'
+            end,
+        },
+        issue = {
+            get_kind_name = function(item)
+                -- openedIssue, closedIssue
+                return item.discussion_locked and 'lockedIssue' or
+                    item.state .. 'Issue'
+            end,
+        },
     }
 }
 ```
@@ -317,13 +341,16 @@ Then, you should update the icon for the `kind_name`:
 ```lua
 kind_icons = {
     openPR = '',
+    openedPR = '',
     closedPR = '',
     mergedPR = '',
     draftPR = '',
     lockedPR = '',
     openIssue = '',
+    openedIssue = '',
     reopenedIssue = '',
     completedIssue = '',
+    closedIssue = '',
     not_plannedIssue = '',
     duplicateIssue = '',
     lockedIssue = '',
@@ -339,13 +366,16 @@ local blink_cmp_kind_name_highlight = {
     Commit = { default = false, fg = '#a6e3a1' },
     Mention = { default = false, fg = '#a6e3a1' },
     openPR = { default = false, fg = '#a6e3a1' },
+    openedPR = { default = false, fg = '#a6e3a1' },
     closedPR = { default = false, fg = '#f38ba8' },
     mergedPR = { default = false, fg = '#cba6f7' },
     draftPR = { default = false, fg = '#9399b2' },
     lockedPR = { default = false, fg = '#f5c2e7' },
     openIssue = { default = false, fg = '#a6e3a1' },
+    openedIssue = { default = false, fg = '#a6e3a1' },
     reopenedIssue = { default = false, fg = '#a6e3a1' },
     completedIssue = { default = false, fg = '#cba6f7' },
+    closedIssue = { default = false, fg = '#cba6f7' },
     not_plannedIssue = { default = false, fg = '#9399b2' },
     duplicateIssue = { default = false, fg = '#9399b2' },
     lockedIssue = { default = false, fg = '#f5c2e7' },
@@ -359,17 +389,17 @@ You may also need to update the `configure_score_offset`, otherwise the default 
 expected. There is an example:
 
 ```lua
-local function github_pr_or_issue_configure_score_offset(items)
+local function pr_or_issue_configure_score_offset(items)
     -- Bonus to make sure items sorted as below:
     local keys = {
         -- place `kind_name` here
-        { 'openIssue', 'reopenedIssue' },
-        { 'openPR' },
-        { 'lockedIssue', 'lockedPR' },
+        { 'openIssue',     'openedIssue', 'reopenedIssue' },
+        { 'openPR',        'openedPR' },
+        { 'lockedIssue',   'lockedPR' },
         { 'completedIssue' },
         { 'draftPR' },
         { 'mergedPR' },
-        { 'closedPR',  'not_plannedIssue', 'duplicateIssue' },
+        { 'closedPR',      'closedIssue', 'not_plannedIssue', 'duplicateIssue' },
     }
     local bonus = 999999
     local bonus_score = {}
@@ -397,10 +427,18 @@ end
 git_centers = {
     github = {
         pull_request = {
-            configure_score_offset = github_pr_or_issue_configure_score_offset,
+            configure_score_offset = pr_or_issue_configure_score_offset,
         },
         issue = {
-            configure_score_offset = github_pr_or_issue_configure_score_offset,
+            configure_score_offset = pr_or_issue_configure_score_offset,
+        },
+    },
+    gitlab = {
+        pull_request = {
+            configure_score_offset = pr_or_issue_configure_score_offset,
+        },
+        issue = {
+            configure_score_offset = pr_or_issue_configure_score_offset,
         },
     }
 }
