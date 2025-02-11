@@ -1,9 +1,10 @@
 local Job = require('plenary.job')
 local common = require('blink-cmp-git.default.common')
+local utils = require('blink-cmp-git.utils')
 
 -- enable when current directory is inside a git repo
 local function default_commit_enable()
-    if vim.fn.executable('git') == 0 then return false end
+    if not utils.command_found('git') then return false end
     local res = false
     ---@diagnostic disable-next-line: missing-fields
     Job:new({

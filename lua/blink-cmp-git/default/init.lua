@@ -1,8 +1,9 @@
 local Job = require('plenary.job')
+local utils = require('blink-cmp-git.utils')
 
 -- Get the absolute path of current git repo
 local function get_git_repo_absolute_path(path)
-    if vim.fn.executable('git') == 0 then return nil end
+    if not utils.command_found('git') then return nil end
     path = path or vim.fn.getcwd()
     local result
     ---@diagnostic disable-next-line: missing-fields

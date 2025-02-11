@@ -2,8 +2,8 @@ local utils = require('blink-cmp-git.utils')
 local common = require('blink-cmp-git.default.common')
 
 local function default_github_enable()
-    if vim.fn.executable('git') == 0 or
-        vim.fn.executable('gh') == 0 and vim.fn.executable('curl') == 0 then
+    if not utils.command_found('git') or
+        not utils.command_found('gh') and not utils.command_found('curl') then
         return false
     end
     return utils.get_repo_remote_origin_url():find('github.com')
