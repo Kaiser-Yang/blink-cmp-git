@@ -86,26 +86,38 @@ git = {
         git_centers = {
             github = {
                 -- Those below have the same fields with `commit`
-                -- Those features will be enabled when `git` and `gh` are found and
+                -- Those features will be enabled when `git` and `gh` (or `curl`) are found and
                 -- remote contains `github.com`
                 -- issue = {
+                --     get_token = function() return '' end,
                 -- },
                 -- pull_request = {
+                --     get_token = function() return '' end,
                 -- },
                 -- mention = {
+                --     get_token = function() return '' end,
+                --     get_documentation = {
+                --         get_token = function() return '' end,
+                --     },
                 -- }
             },
             gitlab = {
                 -- Those below have the same fields with `commit`
-                -- Those features will be enabled when `git` and `glab` are found and
+                -- Those features will be enabled when `git` and `glab` (or `curl`) are found and
                 -- remote contains `gitlab.com`
                 -- issue = {
+                --     get_token = function() return '' end,
                 -- },
                 -- NOTE:
                 -- Even for `gitlab`, you should use `pull_request` rather than`merge_request`
                 -- pull_request = {
+                --     get_token = function() return '' end,
                 -- },
                 -- mention = {
+                --     get_token = function() return '' end,
+                --     get_documentation = {
+                --         get_token = function() return '' end,
+                --     },
                 -- }
             }
         }
@@ -118,6 +130,16 @@ when the file's type is `gitcommit` or `markdown`. By default, `blink-cmp-git` w
 everything when it is created. To enable `blink-cmp-git` all the time makes it possible to
 pre-cache when you enter insert mode or other mode you can input
 (`blink.cmp` will create sources when you can input something).
+
+> [!NOTE]
+> The default configuration will use `curl` when `gh` or `glab` is not found.
+>
+> For `github` users, if you customize the `get_token`, you should see those below to know
+> which permissions are required:
+>
+> * [issue](https://docs.github.com/en/rest/issues/issues?apiVersion=2022-11-28#list-repository-issues)
+> * [pull-request](https://docs.github.com/en/rest/pulls/pulls?apiVersion=2022-11-28#list-pull-requests)
+> * [mention](https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28#list-repository-contributors)
 
 ## Reload Cache
 
@@ -151,75 +173,10 @@ The `blink-cmp-git` will first run command from `get_command` and `get_command_a
 of the command will be passed to `separate_output`. So if you want to customize the completion 
 items, you should be aware of what the output of your command looks like.
 
-The default `get_command` and `get_command_args` for `commit`:
-
-```lua
-git_centers = {
-    commit = {
-        get_command = 'git',
-        get_command_args = {
-            '--no-pager',
-            'log',
-            '--pretty=fuller',
-            '--decorate=no',
-        },
-    }
-}
-```
-
-This will give you the output like:
-
-```gitcommit
-commit 0216336d8ff00d7b8c9304b23bcca31cbfcdf2c8
-Author:     Kaiser-Yang <624626089@qq.com>
-AuthorDate: Sun Jan 12 14:40:38 2025 +0800
-Commit:     Kaiser-Yang <624626089@qq.com>
-CommitDate: Sun Jan 12 14:43:15 2025 +0800
-
-    Cache empty documentations
-
-commit 90e2fd0f5ae6e4de00eab63f5cb99f850e0ffa56
-Author:     Kaiser-Yang <624626089@qq.com>
-AuthorDate: Sun Jan 12 14:27:39 2025 +0800
-Commit:     Kaiser-Yang <624626089@qq.com>
-CommitDate: Sun Jan 12 14:27:39 2025 +0800
-
-    Improve the experience of pre cache
-...
-```
-
-The default `separate_output` for `commit`:
-
-```lua
-git_centers = {
-    commit = {
-    separate_output = function(output)
-        local lines = vim.split(output, '\n')
-        local i = 1
-        local commits = {}
-        -- Those below separate the output to a list of commits
-        -- I've tried use regex to match the commit, but there always were missing some commits
-        while i < #lines do
-            local j = i + 1
-            while j < #lines do
-                if lines[j]:match('^commit ') then
-                    j = j - 1
-                    break
-                end
-                j = j + 1
-            end
-            commits[#commits + 1] = table.concat(lines, '\n', i, j)
-            i = j + 1
-        end
-        return commits
-    end,
-    }
-}
-```
-
-In most situations, you don't need to change the `separate_output`, but you should be aware of each
-item of the `separate_output`'s return value. The default `separate_output` for commit returns an
-array of strings, each string looks like below:
+In most situations, you just need to customize
+`get_lable`, `get_kind_name`, `get_insert_text` and `get_documentation`. Before you customize them,
+you should be aware of what the item looks like. See [item](/doc/item/) to know what them look like.
+The commit item looks like this below:
 
 ```gitcommit
 commit 0216336d8ff00d7b8c9304b23bcca31cbfcdf2c8
@@ -231,10 +188,6 @@ CommitDate: Sun Jan 12 14:43:15 2025 +0800
     Cache empty documentations
 
 ```
-
-Then, `blink-cmp-git` will call `get_lable`, `get_kind_name`, `get_insert_text` and
-`get_documentation` for each item. You just need to customize those functions to customize the
-completion items.
 
 The default getters for `commit`:
 
@@ -340,14 +293,19 @@ git_centers = {
     github = {
         pull_request = {
             get_kind_name = function(item)
-                -- OPENPR, CLOSEDPR, MERGEDPR, DRAFTPR
-                return item.isDraft and 'DRAFTPR' or item.state .. 'PR'
+                -- openPR, closedPR, mergedPR, draftPR, lockedPR
+                return item.locked and 'lockedPR' or
+                    item.draft and 'draftPR' or
+                    item.merged_at and 'mergedPR' or
+                    item.state .. 'PR'
             end,
         },
         issue = {
             get_kind_name = function(item)
-                -- OPENIssue, REOPENIssue, CONFIRMEDIssue, NOT_PLANNEDIssue
-                return (item.stateReason or item.state) .. 'Issue'
+                -- openIssue, reopenedIssue, completedIssue
+                -- not_plannedIssue, lockedIssue, duplicateIssue
+                return item.locked and 'lockedIssue' or
+                    (item.state_reason or item.state) .. 'Issue'
             end,
         },
     }
@@ -358,14 +316,17 @@ Then, you should update the icon for the `kind_name`:
 
 ```lua
 kind_icons = {
-    OPENPR = '',
-    CLOSEDPR = '',
-    MERGEDPR = '',
-    DRAFTPR = '',
-    OPENIssue = '',
-    REOPENEDIssue = '',
-    COMPLETEDIssue = '',
-    NOT_PLANNEDIssue = '',
+    openPR = '',
+    closedPR = '',
+    mergedPR = '',
+    draftPR = '',
+    lockedPR = '',
+    openIssue = '',
+    reopenedIssue = '',
+    completedIssue = '',
+    not_plannedIssue = '',
+    duplicateIssue = '',
+    lockedIssue = '',
 }
 ```
 
@@ -377,14 +338,17 @@ see [How to customize the highlight?](#how-to-customize-the-highlight). Here is 
 local blink_cmp_kind_name_highlight = {
     Commit = { default = false, fg = '#a6e3a1' },
     Mention = { default = false, fg = '#a6e3a1' },
-    OPENPR = { default = false, fg = '#a6e3a1' },
-    OPENIssue = { default = false, fg = '#a6e3a1' },
-    REOPENEDIssue = { default = false, fg = '#a6e3a1' },
-    CLOSEDPR = { default = false, fg = '#f38ba8' },
-    MERGEDPR = { default = false, fg = '#cba6f7' },
-    COMPLETEDIssue = { default = false, fg = '#cba6f7' },
-    NOT_PLANNEDIssue = { default = false, fg = '#626972' },
-    DRAFTPR = { default = false, fg = '#626972' },
+    openPR = { default = false, fg = '#a6e3a1' },
+    closedPR = { default = false, fg = '#f38ba8' },
+    mergedPR = { default = false, fg = '#cba6f7' },
+    draftPR = { default = false, fg = '#9399b2' },
+    lockedPR = { default = false, fg = '#f5c2e7' },
+    openIssue = { default = false, fg = '#a6e3a1' },
+    reopenedIssue = { default = false, fg = '#a6e3a1' },
+    completedIssue = { default = false, fg = '#cba6f7' },
+    not_plannedIssue = { default = false, fg = '#9399b2' },
+    duplicateIssue = { default = false, fg = '#9399b2' },
+    lockedIssue = { default = false, fg = '#f5c2e7' },
 }
 for kind_name, hl in pairs(blink_cmp_kind_name_highlight) do
     vim.api.nvim_set_hl(0, 'BlinkCmpKind' .. kind_name, hl)
@@ -399,12 +363,13 @@ local function github_pr_or_issue_configure_score_offset(items)
     -- Bonus to make sure items sorted as below:
     local keys = {
         -- place `kind_name` here
-        { 'OPENIssue', 'REOPENEDIssue' },
-        { 'OPENPR' },
-        { 'COMPLETEDIssue' },
-        { 'DRAFTPR' },
-        { 'MERGEDPR' },
-        { 'CLOSEDPR',  'NOT_PLANNEDIssue' },
+        { 'openIssue', 'reopenedIssue' },
+        { 'openPR' },
+        { 'lockedIssue', 'lockedPR' },
+        { 'completedIssue' },
+        { 'draftPR' },
+        { 'mergedPR' },
+        { 'closedPR',  'not_plannedIssue', 'duplicateIssue' },
     }
     local bonus = 999999
     local bonus_score = {}
