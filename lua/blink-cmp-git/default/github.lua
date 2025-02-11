@@ -140,19 +140,21 @@ local function default_github_mention_get_documentation(item)
     }
 end
 
-local function default_github_pr_or_issue_get_command_args(command, token, is_pr)
+local function default_github_pr_issue_mention_get_command_args(command, token, type_name)
     local args = basic_args_for_github_api(token)
     if command == 'curl' then
         table.insert(args, '-s')
         table.insert(args, '-f')
         table.insert(args, 'https://api.github.com/repos/' .. utils.get_repo_owner_and_repo() .. '/' ..
-            (is_pr and 'pulls' or 'issues') ..
-            '?state=all')
+            type_name ..
+            ((type_name == 'issues' or type_name == 'pulls') and '?state=all' or '')
+        )
     else
         table.insert(args, 1, 'api')
         table.insert(args, 'repos/' .. utils.get_repo_owner_and_repo() .. '/' ..
-            (is_pr and 'pulls' or 'issues') ..
-            '?state=all')
+            type_name ..
+            ((type_name == 'issues' or type_name == 'pulls') and '?state=all' or '')
+        )
     end
     return args
 end
@@ -169,19 +171,6 @@ local function default_github_issue_separate_output(output)
     return issues
 end
 
-local function default_github_mention_get_command_args(command, token)
-    local args = basic_args_for_github_api(token)
-    if command == 'curl' then
-        table.insert(args, '-s')
-        table.insert(args, '-f')
-        table.insert(args, 'https://api.github.com/repos/' .. utils.get_repo_owner_and_repo() .. '/contributors')
-    else
-        table.insert(args, 1, 'api')
-        table.insert(args, 'repos/' .. utils.get_repo_owner_and_repo() .. '/contributors')
-    end
-    return args
-end
-
 --- @type blink-cmp-git.GCSOptions
 return {
     issue = {
@@ -190,7 +179,7 @@ return {
         get_token = '',
         get_command = default_github_get_command,
         get_command_args = function(command, token)
-            return default_github_pr_or_issue_get_command_args(command, token, false)
+            return default_github_pr_issue_mention_get_command_args(command, token, 'issues')
         end,
         insert_text_trailing = ' ',
         separate_output = default_github_issue_separate_output,
@@ -207,7 +196,7 @@ return {
         get_token = '',
         get_command = default_github_get_command,
         get_command_args = function(command, token)
-            return default_github_pr_or_issue_get_command_args(command, token, true)
+            return default_github_pr_issue_mention_get_command_args(command, token, 'pulls')
         end,
         insert_text_trailing = ' ',
         separate_output = common.json_array_separator,
@@ -223,7 +212,9 @@ return {
         triggers = { '@' },
         get_token = '',
         get_command = default_github_get_command,
-        get_command_args = default_github_mention_get_command_args,
+        get_command_args = function(command, token)
+            return default_github_pr_issue_mention_get_command_args(command, token, 'contributors')
+        end,
         insert_text_trailing = ' ',
         separate_output = common.json_array_separator,
         get_label = default_github_mention_get_label,
