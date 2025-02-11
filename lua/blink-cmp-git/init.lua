@@ -200,6 +200,7 @@ function GitSource.new(opts, _)
         self:run_pre_cache_jobs()
     end
     vim.api.nvim_create_user_command(blink_cmp_git_reload_cache_command, function()
+        self.git_source_config.before_reload_cache()
         if utils.get_option(self.git_source_config.use_items_cache) then
             self.cache:clear()
             if utils.get_option(self.git_source_config.use_items_pre_cache) then
