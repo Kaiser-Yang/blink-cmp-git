@@ -15,7 +15,7 @@ function M.command_found(command)
     return vim.fn.executable(command) == 1
 end
 
-function M.get_repo_owner_and_repo()
+function M.get_repo_owner_and_repo(do_url_encode)
     local remote_url = M.get_repo_remote_origin_url()
     local owner, repo, res
     if remote_url:find('github.com') then
@@ -28,9 +28,11 @@ function M.get_repo_owner_and_repo()
     else
         res = owner .. '/' .. repo
     end
-    string.gsub(res, '([^%w])', function(c)
-        return string.format('%%%02X', string.byte(c))
-    end)
+    if do_url_encode then
+        res = string.gsub(res, '[^%w _%%%-%.~]', function(c)
+            return string.format('%%%02X', string.byte(c))
+        end)
+    end
     return res
 end
 
