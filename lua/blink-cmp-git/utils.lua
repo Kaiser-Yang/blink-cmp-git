@@ -65,7 +65,7 @@ function M.str(...)
 end
 
 function M.get_repo_remote_origin_url()
-    if vim.fn.executable('git') == 0 then return '' end
+    if not M.command_found('git') then return '' end
     local output = ''
     ---@diagnostic disable-next-line: missing-fields
     Job:new({
