@@ -77,7 +77,8 @@ local function default_github_pr_or_issue_get_documentation(item)
         (
             utils.concat_when_all_true('Merged  at: ', item.merged_at, '\n')
             or
-            utils.concat_when_all_true('Closed  at: ', item.closed_at, '\n')
+            utils.concat_when_all_true('Closed  at: ', item.closed_at, '\n') ..
+            utils.concat_when_all_true('Closed by: ', item.closed_by.login, '\n')
         ) ..
         utils.concat_when_all_true(item.body)
 end
