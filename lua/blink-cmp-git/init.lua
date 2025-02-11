@@ -24,6 +24,11 @@ local function create_job_from_documentation_command(documentation_command)
     return Job:new({
         command = command,
         args = utils.get_option(documentation_command.get_command_args, command, token),
+        on_exit = function(j, return_value, signal)
+            if return_value ~= 0 or utils.truthy(j:stderr_result()) then
+                documentation_command.on_error(return_value, table.concat(j:stderr_result(), '\n'))
+            end
+        end,
         env = vim.tbl_extend('force', vim.fn.environ(), {
             CLICOLOR = '0',
             PAGER = '',

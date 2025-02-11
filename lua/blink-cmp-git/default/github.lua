@@ -136,7 +136,8 @@ local function default_github_mention_get_documentation(item)
                 utils.concat_when_all_true('Email: ', user_info.email, '\n') ..
                 utils.concat_when_all_true('Company: ', user_info.company, '\n') ..
                 utils.concat_when_all_true('Created at: ', user_info.created_at, '\n')
-        end
+        end,
+        on_error = common.default_on_error,
     }
 end
 
