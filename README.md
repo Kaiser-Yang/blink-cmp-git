@@ -414,7 +414,7 @@ local function pr_or_issue_configure_score_offset(items)
             items[i].score_offset = bonus_score[bonus_key]
         end
         -- sort by number when having the same bonus score
-        local number = items[i].label:match('#(%d+)')
+        local number = items[i].label:match('[#!](%d+)')
         if number then
             if items[i].score_offset == nil then
                 items[i].score_offset = 0
