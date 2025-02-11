@@ -210,7 +210,7 @@ return {
         get_kind_name = default_gitlab_mr_get_kind_name,
         get_insert_text = default_gitlab_mr_get_insert_text,
         get_documentation = function(item)
-            return default_gitlab_mr_or_issue_get_documentation(item, false)
+            return default_gitlab_mr_or_issue_get_documentation(item, true)
         end,
         configure_score_offset = default_gitlab_mr_or_issue_configure_score_offset,
         on_error = common.default_on_error,
