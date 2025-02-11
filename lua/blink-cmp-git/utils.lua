@@ -17,16 +17,21 @@ end
 
 function M.get_repo_owner_and_repo()
     local remote_url = M.get_repo_remote_origin_url()
-    local owner, repo
+    local owner, repo, res
     if remote_url:find('github.com') then
         owner, repo = remote_url:match('github%.com[/:]([^/]+)/([^/]+)%.git')
     elseif remote_url:find('gitlab.com') then
         owner, repo = remote_url:match('gitlab%.com[/:]([^/]+)/([^/]+)%.git')
     end
     if not owner or not repo then
-        return ''
+        res = ''
+    else
+        res = owner .. '/' .. repo
     end
-    return owner .. '/' .. repo
+    string.gsub(res, '([^%w])', function(c)
+        return string.format('%%%02X', string.byte(c))
+    end)
+    return res
 end
 
 function M.remove_empty_string_value(tbl)
