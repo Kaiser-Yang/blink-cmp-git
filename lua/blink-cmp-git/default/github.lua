@@ -65,7 +65,10 @@ end
 local function default_github_pr_or_issue_get_documentation(item)
     return utils.concat_when_all_true('#', item.number, ' ', item.title, '\n') ..
         utils.concat_when_all_true('State: ',
-            item.locked and 'locked' or item.draft and 'draft' or item.state,
+            item.locked and 'locked' or
+            item.draft and 'draft' or
+            item.merged_at and 'merged' or
+            item.state,
             '\n') ..
         utils.concat_when_all_true('State Reason: ', item.active_lock_reason or item.state_reason, '\n') ..
         utils.concat_when_all_true('Author: ', item.user.login, '\n') ..
