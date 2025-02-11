@@ -147,7 +147,8 @@ local function default_gitlab_mention_get_documentation(item)
                 utils.concat_when_all_true('Email: ', user_info.public_email, '\n') ..
                 utils.concat_when_all_true('Company: ', user_info.work_information, '\n') ..
                 utils.concat_when_all_true('Created at: ', user_info.created_at, '\n')
-        end
+        end,
+        on_error = common.default_on_error,
     }
 end
 
