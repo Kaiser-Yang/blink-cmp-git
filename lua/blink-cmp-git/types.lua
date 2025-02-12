@@ -41,5 +41,6 @@
 --- @field should_reload_cache? fun(): boolean
 --- @field before_reload_cache? fun()
 --- @field kind_icons? table<string, string>
+--- @field get_cwd? fun(): string
 --- @field commit? blink-cmp-git.GCSCompletionOptions
 --- @field git_centers? table<blink-cmp-git.GCSGitCenterKeys, blink-cmp-git.GCSOptions>

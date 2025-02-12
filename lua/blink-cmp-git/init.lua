@@ -24,6 +24,7 @@ local function create_job_from_documentation_command(documentation_command)
     return Job:new({
         command = command,
         args = utils.get_option(documentation_command.get_command_args, command, token),
+        cwd = utils.get_cwd(),
         on_exit = function(j, return_value, signal)
             if return_value ~= 0 or utils.truthy(j:stderr_result()) then
                 documentation_command.on_error(return_value, table.concat(j:stderr_result(), '\n'))
@@ -79,6 +80,7 @@ local function create_job_from_feature(feature, items)
     return Job:new({
         command = command,
         args = utils.get_option(feature.get_command_args, command, token),
+        cwd = utils.get_cwd(),
         env = vim.tbl_extend('force', vim.fn.environ(), {
             CLICOLOR = '0',
             PAGER = '',
@@ -187,11 +189,20 @@ function GitSource:run_pre_cache_jobs()
     end
 end
 
+local latest_git_source_config = default
+
+function GitSource.get_latest_git_source_config()
+    return latest_git_source_config
+end
+
 --- @param opts blink-cmp-git.Options
 --- @return blink-cmp-git.GCSCompletionOptions[]
 function GitSource.new(opts, _)
     local self = setmetatable({}, { __index = GitSource })
     self.git_source_config = vim.tbl_deep_extend("force", default, opts or {})
+    latest_git_source_config = self.git_source_config
+
+    -- cache and pre-cache jobs
     self.cache = require('blink-cmp-git.cache').new()
     local use_items_cache = utils.get_option(self.git_source_config.use_items_cache)
     local use_items_pre_cache = utils.get_option(self.git_source_config.use_items_pre_cache)
@@ -199,6 +210,8 @@ function GitSource.new(opts, _)
         self:create_pre_cache_jobs()
         self:run_pre_cache_jobs()
     end
+
+    -- reload cache command and autocmd
     vim.api.nvim_create_user_command(blink_cmp_git_reload_cache_command, function()
         self.git_source_config.before_reload_cache()
         if utils.get_option(self.git_source_config.use_items_cache) then
@@ -214,11 +227,15 @@ function GitSource.new(opts, _)
     vim.api.nvim_create_autocmd('BufEnter', {
         group = blink_cmp_git_autocmd_group,
         callback = function()
-            if utils.get_option(self.git_source_config.should_reload_cache) then
+            if self.git_source_config.should_reload_cache() then
                 vim.cmd(blink_cmp_git_reload_cache_command)
             end
         end
     })
+    -- call the function so the default last_git_repo is set
+    self.git_source_config.should_reload_cache()
+
+    -- configure kind icons
     local completion_item_kind = require('blink.cmp.types').CompletionItemKind
     local blink_kind_icons = require('blink.cmp.config').appearance.kind_icons
     for kind_name, icon in pairs(utils.get_option(self.git_source_config.kind_icons)) do

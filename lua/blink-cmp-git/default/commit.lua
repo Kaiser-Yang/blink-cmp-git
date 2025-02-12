@@ -1,22 +1,5 @@
-local Job = require('plenary.job')
 local common = require('blink-cmp-git.default.common')
 local utils = require('blink-cmp-git.utils')
-
--- enable when current directory is inside a git repo
-local function default_commit_enable()
-    if not utils.command_found('git') then return false end
-    local res = false
-    ---@diagnostic disable-next-line: missing-fields
-    Job:new({
-        command = 'git',
-        args = { 'rev-parse', '--is-inside-work-tree' },
-        cwd = vim.fn.getcwd(),
-        on_exit = function(_, return_value, _)
-            res = return_value == 0
-        end
-    }):sync()
-    return res
-end
 
 local function default_commit_separate_output(output)
     local lines = vim.split(output, '\n')
@@ -56,7 +39,7 @@ end
 
 --- @type blink-cmp-git.GCSCompletionOptions
 return {
-    enable = default_commit_enable,
+    enable = utils.is_inside_git_repo,
     triggers = { ':' },
     get_token = '',
     get_command = 'git',
