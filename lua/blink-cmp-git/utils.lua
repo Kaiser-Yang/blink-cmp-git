@@ -1,6 +1,21 @@
 local M = {}
 local Job = require('plenary.job')
 
+function M.is_inside_git_repo()
+    if not M.command_found('git') then return false end
+    local res = false
+    ---@diagnostic disable-next-line: missing-fields
+    Job:new({
+        command = 'git',
+        args = { 'rev-parse', '--is-inside-work-tree' },
+        cwd = M.get_cwd(),
+        on_exit = function(_, return_value, _)
+            res = return_value == 0
+        end
+    }):sync()
+    return res
+end
+
 function M.get_option(opt, ...)
     if type(opt) == 'function' then
         return opt(...)
@@ -81,7 +96,7 @@ function M.get_repo_remote_origin_url()
     Job:new({
         command = 'git',
         args = { 'remote', 'get-url', 'origin' },
-        cwd = vim.fn.getcwd(),
+        cwd = M.get_cwd(),
         on_exit = function(job, return_value, _)
             if return_value ~= 0 then
                 return
@@ -90,6 +105,33 @@ function M.get_repo_remote_origin_url()
         end
     }):sync()
     return output
+end
+
+function M.get_cwd()
+    return require('blink-cmp-git').get_latest_git_source_config().get_cwd()
+end
+
+--- Get the absolute path of current git repo
+--- Return nil if not in a git repo
+--- @return string?
+function M.get_git_repo_absolute_path()
+    if not M.command_found('git') then return nil end
+    local result
+    ---@diagnostic disable-next-line: missing-fields
+    Job:new({
+        command = 'git',
+        args = { 'rev-parse', '--show-toplevel' },
+        cwd = M.get_cwd(),
+        on_exit = function(j, return_value, _)
+            if return_value == 0 then
+                result = table.concat(j:result(), '\n')
+                if not M.truthy(result) then
+                    result = nil
+                end
+            end
+        end
+    }):sync()
+    return result
 end
 
 function M.json_decode(str, opts)
