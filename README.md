@@ -444,6 +444,81 @@ git_centers = {
 }
 ```
 
+### How to customize for enterprise `github` or `gitlab`?
+
+See [how to customize the APIs](#how-to-customize-the-apis).
+
+### How to customize the APIs?
+
+By default, `blink-cmp-git` will request those endpoints below:
+
+| Feature                            | API Endpoint                         |
+|------------------------------------|--------------------------------------|
+| `github.issue`                     | `repos/OWNER/REPO/issues`            |
+| `github.pull_request`              | `repos/OWNER/REPO/pulls`             |
+| `github.mention`                   | `repos/OWNER/REPO/contributors`      |
+| `github.mention.get_documentation` | `users/USERNAME`                     |
+| `gitlab.issue`                     | `projects/PROJECT_ID/issues`         |
+| `gitlab.pull_request`              | `projects/PROJECT_ID/merge_requests` |
+| `gitlab.mention`                   | `projects/PROJECT_ID/users`          |
+| `gitlab.mention.get_documentation` | `users/USERID`                       |
+
+You can see
+[github rest API](https://docs.github.com/en/rest)
+and
+[gitlab rest API](https://docs.gitlab.com/ee/api/rest/) to know what the available parameters are.
+
+I'll give you an example for `github.issue` to customize `per_page` and `sort`:
+
+```lua
+git_centers = {
+    github = {
+        issue = {
+            get_command_args = function(command, token)
+                -- Get the default args
+                local args = require('blink-cmp-git.default.github')
+                    .issue
+                    .get_command_args(command, token)
+                local utils = require('blink-cmp-git.utils')
+                -- The last element is the API endpoint, customize it
+                if command == 'curl' then
+                    -- You can update the `github.com` to your enterprise's domain
+                    args[#args] = 'https://api.github.com/repos/' ..
+                        -- NOTE:
+                        -- for `gitlab` users, you should use `utils.get_repo_owner_and_repo(true)`
+                        utils.get_repo_owner_and_repo() ..
+                        '/issues?state=all&per_page=100&sort=updated'
+                else
+                    args[#args] = 'repos/' ..
+                        -- NOTE:
+                        -- for `gitlab` users, you should use `utils.get_repo_owner_and_repo(true)`
+                        utils.get_repo_owner_and_repo() ..
+                        '/issues?state=all&per_page=100&sort=updated'
+                    -- use those below to customize the enterprise's domain
+                    -- table.insert(args, '--hostname')
+                    -- table.insert(args, 'github.com')
+                end
+                return args
+            end,
+        }
+    }
+}
+```
+
+> [!NOTE]
+> If you use `sort=` to customize, you may want the items listed by its original order. You need
+> to customize the `configure_score_offset` to make it work.
+
+```lua
+git_centers = {
+    github = {
+        issue = {
+            configure_score_offset = require('blink-cmp-git.default.common').score_offset_origin
+        }
+    }
+}
+```
+
 ## Performance
 
 Once `async` is enabled, the completion will has no effect to your other operations.
