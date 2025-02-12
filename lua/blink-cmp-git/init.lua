@@ -233,7 +233,8 @@ function GitSource.new(opts, _)
         end
     })
     -- call the function so the default last_git_repo is set
-    self.git_source_config.should_reload_cache()
+    -- defer the call to avoid getting empty last_git_repo even in a git repo
+    vim.schedule_wrap(self.git_source_config.should_reload_cache)()
 
     -- configure kind icons
     local completion_item_kind = require('blink.cmp.types').CompletionItemKind
