@@ -148,13 +148,13 @@ local function default_github_pr_issue_mention_get_command_args(command, token, 
         table.insert(args, '-f')
         table.insert(args, 'https://api.github.com/repos/' .. utils.get_repo_owner_and_repo() .. '/' ..
             type_name ..
-            ((type_name == 'issues' or type_name == 'pulls') and '?state=all' or '')
+            ((type_name == 'issues' or type_name == 'pulls') and '?state=open' or '')
         )
     else
         table.insert(args, 1, 'api')
         table.insert(args, 'repos/' .. utils.get_repo_owner_and_repo() .. '/' ..
             type_name ..
-            ((type_name == 'issues' or type_name == 'pulls') and '?state=all' or '')
+            ((type_name == 'issues' or type_name == 'pulls') and '?state=open' or '')
         )
     end
     return args
