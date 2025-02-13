@@ -6,6 +6,9 @@ local function default_github_enable()
         not utils.command_found('gh') and not utils.command_found('curl') then
         return false
     end
+    if utils.truthy(utils.get_repo_owner_and_repo_from_octo()) then
+        return true
+    end
     return utils.get_repo_remote_url():find('github.com')
 end
 
