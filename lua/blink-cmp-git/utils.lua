@@ -40,12 +40,14 @@ function M.get_job_default_env()
 end
 
 function M.get_repo_owner_and_repo(do_url_encode)
-    local remote_url = M.get_repo_remote_origin_url()
+    local remote_url = M.get_repo_remote_url()
+    -- remove the trailing .git
+    remote_url = remote_url:gsub('%.git$', '')
     local owner, repo, res
     if remote_url:find('github.com') then
-        owner, repo = remote_url:match('github%.com[/:]([^/]+)/([^/]+)%.git')
+        owner, repo = remote_url:match('github%.com[/:]([^/]+)/([^/]+)$')
     elseif remote_url:find('gitlab.com') then
-        owner, repo = remote_url:match('gitlab%.com[/:]([^/]+)/([^/]+)%.git')
+        owner, repo = remote_url:match('gitlab%.com[/:]([^/]+)/([^/]+)$')
     end
     if not owner or not repo then
         res = ''
@@ -98,13 +100,17 @@ function M.str(...)
     return table.concat(args, ' ')
 end
 
-function M.get_repo_remote_origin_url()
+function M.get_remote_name()
+    return require('blink-cmp-git').get_latest_git_source_config().get_remote_name()
+end
+
+function M.get_repo_remote_url()
     if not M.command_found('git') then return '' end
     local output = ''
     ---@diagnostic disable-next-line: missing-fields
     Job:new({
         command = 'git',
-        args = { 'remote', 'get-url', 'origin' },
+        args = { 'remote', 'get-url', M.get_remote_name()},
         cwd = M.get_cwd(),
         on_exit = function(job, return_value, _)
             if return_value ~= 0 then

@@ -34,6 +34,8 @@
 
 --- @alias blink-cmp-git.GCSGitCenterKeys 'github'|'gitlab'|string
 
+-- TODO:
+-- remove async and use_items_cache
 --- @class (exact) blink-cmp-git.Options
 --- @field async? boolean|fun(): boolean
 --- @field use_items_cache? boolean|fun(): boolean
@@ -42,5 +44,6 @@
 --- @field before_reload_cache? fun()
 --- @field kind_icons? table<string, string>
 --- @field get_cwd? fun(): string
+--- @field get_remote_name? fun(): string
 --- @field commit? blink-cmp-git.GCSCompletionOptions
 --- @field git_centers? table<blink-cmp-git.GCSGitCenterKeys, blink-cmp-git.GCSOptions>

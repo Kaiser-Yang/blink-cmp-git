@@ -6,7 +6,7 @@ local default_gitlab_enable = function()
         not utils.command_found('glab') and not utils.command_found('curl') then
         return false
     end
-    return utils.get_repo_remote_origin_url():find('gitlab.com')
+    return utils.get_repo_remote_url():find('gitlab.com')
 end
 
 local function default_gitlab_issue_get_label(item)

@@ -23,6 +23,10 @@ local function default_before_reload_cache()
     log.info('Start reloading blink-cmp-git cache.')
 end
 
+local function default_get_remote_name()
+    return 'origin'
+end
+
 --- @type blink-cmp-git.Options
 return {
     async = true,
@@ -39,6 +43,7 @@ return {
         Issue = '',
     },
     get_cwd = vim.fn.getcwd,
+    get_remote_name = default_get_remote_name,
     commit = require('blink-cmp-git.default.commit'),
     git_centers = {
         github = require('blink-cmp-git.default.github'),
