@@ -97,7 +97,8 @@ git = {
                 -- mention = {
                 --     get_token = function() return '' end,
                 --     get_documentation = function(item)
-                --         local default = require('blink-cmp-git.default.github').mention.get_documentation(item)
+                --         local default = require('blink-cmp-git.default.github')
+                --             .mention.get_documentation(item)
                 --         default.get_token = function() return '' end
                 --         return default
                 --     end
@@ -118,7 +119,8 @@ git = {
                 -- mention = {
                 --     get_token = function() return '' end,
                 --     get_documentation = function(item)
-                --         local default = require('blink-cmp-git.default.gitlab').mention.get_documentation(item)
+                --         local default = require('blink-cmp-git.default.gitlab')
+                --            .mention.get_documentation(item)
                 --         default.get_token = function() return '' end
                 --         return default
                 --     end
@@ -508,6 +510,10 @@ git_centers = {
     }
 }
 ```
+
+> [!NOTE]
+> For `github`, the `per_page` has a maximum of `100`.
+> See [github-discussion-comment](https://github.com/orgs/community/discussions/9868#discussioncomment-1943095).
 
 ## Performance
 
