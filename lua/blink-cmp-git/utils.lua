@@ -39,26 +39,42 @@ function M.get_job_default_env()
     })
 end
 
+function M.encode_uri_component(str)
+    return string.gsub(str, '[^%w _%%%-%.~]', function(c)
+        return string.format('%%%02X', string.byte(c))
+    end)
+end
+
+function M.get_repo_owner_and_repo_from_octo()
+    if vim.o.filetype == 'octo' then
+        local owner, repo = string.match(vim.fn.expand('%:p:h'), '^octo://([^/]+)/([^/]+)')
+        if owner and repo then
+            return owner .. '/' .. repo
+        end
+    end
+    return ''
+end
+
 function M.get_repo_owner_and_repo(do_url_encode)
-    local remote_url = M.get_repo_remote_url()
-    -- remove the trailing .git
-    remote_url = remote_url:gsub('%.git$', '')
     local owner, repo, res
-    if remote_url:find('github.com') then
-        owner, repo = remote_url:match('github%.com[/:]([^/]+)/([^/]+)$')
-    elseif remote_url:find('gitlab.com') then
-        owner, repo = remote_url:match('gitlab%.com[/:]([^/]+)/([^/]+)$')
+    res = M.get_repo_owner_and_repo_from_octo()
+    if not M.truthy(res) then
+        local remote_url = M.get_repo_remote_url()
+        -- remove the trailing .git
+        remote_url = remote_url:gsub('%.git$', '')
+        if remote_url:find('github.com') then
+            owner, repo = remote_url:match('github%.com[/:]([^/]+)/([^/]+)$')
+        elseif remote_url:find('gitlab.com') then
+            owner, repo = remote_url:match('gitlab%.com[/:]([^/]+)/([^/]+)$')
+        end
+        if not owner or not repo then
+            -- This will never happen for default configuration
+            res = ''
+        else
+            res = owner .. '/' .. repo
+        end
     end
-    if not owner or not repo then
-        res = ''
-    else
-        res = owner .. '/' .. repo
-    end
-    if do_url_encode then
-        res = string.gsub(res, '[^%w _%%%-%.~]', function(c)
-            return string.format('%%%02X', string.byte(c))
-        end)
-    end
+    res = do_url_encode and M.encode_uri_component(res) or res
     return res
 end
 
@@ -110,7 +126,7 @@ function M.get_repo_remote_url()
     ---@diagnostic disable-next-line: missing-fields
     Job:new({
         command = 'git',
-        args = { 'remote', 'get-url', M.get_remote_name()},
+        args = { 'remote', 'get-url', M.get_remote_name() },
         cwd = M.get_cwd(),
         on_exit = function(job, return_value, _)
             if return_value ~= 0 then
