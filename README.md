@@ -293,6 +293,10 @@ vim.api.nvim_set_hl(0, 'BlinkCmpKind' .. 'Commit', { default = false, fg = '#a6e
 
 ### How to customize different icons for open, closed, and merged pull requests or issues?
 
+By default, `blink-cmp-git` will only fetch the open pull requests or issues. So you should
+customize the `api` parameters to fetch all states.
+See [How to customize the APIs?](#how-to-customize-the-apis).
+
 Firstly, you should update the `get_kind_name` to customize the `kind_name`:
 
 ```lua
