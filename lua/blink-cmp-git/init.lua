@@ -202,6 +202,17 @@ function GitSource.new(opts, _)
     self.git_source_config = vim.tbl_deep_extend("force", default, opts or {})
     latest_git_source_config = self.git_source_config
 
+    -- configure kind icons, set this before creating jobs
+    -- so that the kind icons can be used in the jobs correctly
+    local completion_item_kind = require('blink.cmp.types').CompletionItemKind
+    local blink_kind_icons = require('blink.cmp.config').appearance.kind_icons
+    for kind_name, icon in pairs(utils.get_option(self.git_source_config.kind_icons)) do
+        completion_item_kind[#completion_item_kind + 1] = kind_name
+        completion_item_kind[kind_name] = #completion_item_kind
+        blink_kind_icons[kind_name] = icon
+        vim.api.nvim_set_hl(0, 'BlinkCmpKind' .. kind_name, { link = 'BlinkCmpKind', default = true })
+    end
+
     -- cache and pre-cache jobs
     self.cache = require('blink-cmp-git.cache').new()
     local use_items_cache = utils.get_option(self.git_source_config.use_items_cache)
@@ -236,15 +247,6 @@ function GitSource.new(opts, _)
     -- defer the call to avoid getting empty last_git_repo even in a git repo
     vim.schedule_wrap(self.git_source_config.should_reload_cache)()
 
-    -- configure kind icons
-    local completion_item_kind = require('blink.cmp.types').CompletionItemKind
-    local blink_kind_icons = require('blink.cmp.config').appearance.kind_icons
-    for kind_name, icon in pairs(utils.get_option(self.git_source_config.kind_icons)) do
-        completion_item_kind[#completion_item_kind + 1] = kind_name
-        completion_item_kind[kind_name] = #completion_item_kind
-        blink_kind_icons[kind_name] = icon
-        vim.api.nvim_set_hl(0, 'BlinkCmpKind' .. kind_name, { link = 'BlinkCmpKind', default = true })
-    end
     return self
 end
 
