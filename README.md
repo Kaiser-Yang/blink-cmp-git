@@ -151,8 +151,8 @@ pre-cache when you enter insert mode or other mode you can input
 > to know how to get the token.
 
 > [!NOTE]
-> For [octo.nvim](https://github.com/pwntester/octo.nvim) users, `blink-cmp-git` support it by
-> default. By default, when you are in a `octo` file, `blink-cmp-git` will use the `octo`'s
+> For [octo.nvim](https://github.com/pwntester/octo.nvim) users, `blink-cmp-git` supports it.
+> By default, when you are in a `octo` file, `blink-cmp-git` will use the `octo`'s
 > path to get the `owner` and `repo` to fetch the items.
 
 ## Reload Cache
