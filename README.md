@@ -515,6 +515,22 @@ git_centers = {
 > For `github`, the `per_page` has a maximum of `100`.
 > See [github-discussion-comment](https://github.com/orgs/community/discussions/9868#discussioncomment-1943095).
 
+## How to auto reload cache when opening a file from a different repository?
+
+By default, `blink-cmp-git` will reload the cache when the result of `get_cwd` is changed to
+another repository.
+
+The default `get_cwd` is `vim.fn.getcwd`. If you want to reload the cache
+when opening a file from a different repository, you just need to update the `get_cwd` function.
+For example:
+
+```lua
+get_cwd = function()
+    -- return the directory of the current file
+    return vim.fn.expand('%:p:h')
+end
+```
+
 ## Performance
 
 Once `async` is enabled, the completion will has no effect to your other operations.
