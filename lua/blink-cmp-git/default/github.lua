@@ -9,43 +9,6 @@ local function default_github_enable()
     return utils.get_repo_remote_origin_url():find('github.com')
 end
 
--- TODO: refactor this function
-local function default_github_pr_or_issue_configure_score_offset(items)
-    -- Bonus to make sure items sorted as below:
-    -- open issue, open pr, closed issue, merged pr, closed pr
-    local keys = {
-        'openIssue',
-        'openPR',
-        'closedIssue',
-        'mergedPR',
-        'draftPR',
-        'closedPR'
-    }
-    local bonus = 999999
-    local bonus_score = {}
-    for i = 1, #keys do
-        bonus_score[keys[i]] = bonus * (#keys - i)
-    end
-    for i = 1, #items do
-        local state = ''
-        if type(items[i].documentation) == 'string' then
-            state = items[i].documentation:match('State: (%w*)')
-        end
-        local bonus_key = items[i].isDraft and 'draftPR' or state .. items[i].kind_name
-        if bonus_score[bonus_key] then
-            items[i].score_offset = bonus_score[bonus_key]
-        end
-        -- sort by number when having the same bonus score
-        local number = items[i].label:match('#(%d+)')
-        if number then
-            if items[i].score_offset == nil then
-                items[i].score_offset = 0
-            end
-            items[i].score_offset = items[i].score_offset + tonumber(number)
-        end
-    end
-end
-
 local function default_github_pr_or_issue_get_label(item)
     return utils.concat_when_all_true('#', item.number, ' ', item.title)
 end
@@ -188,7 +151,7 @@ return {
         get_kind_name = default_issue_get_kind_name,
         get_insert_text = default_github_pr_or_issue_get_insert_text,
         get_documentation = default_github_pr_or_issue_get_documentation,
-        configure_score_offset = default_github_pr_or_issue_configure_score_offset,
+        configure_score_offset = common.score_offset_origin,
         on_error = common.default_on_error,
     },
     pull_request = {
@@ -205,7 +168,7 @@ return {
         get_kind_name = default_github_pr_get_kind_name,
         get_insert_text = default_github_pr_or_issue_get_insert_text,
         get_documentation = default_github_pr_or_issue_get_documentation,
-        configure_score_offset = default_github_pr_or_issue_configure_score_offset,
+        configure_score_offset = common.score_offset_origin,
         on_error = common.default_on_error,
     },
     mention = {

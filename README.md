@@ -509,20 +509,6 @@ git_centers = {
 }
 ```
 
-> [!NOTE]
-> If you use `sort=` to customize, you may want the items listed by its original order. You need
-> to customize the `configure_score_offset` to make it work.
-
-```lua
-git_centers = {
-    github = {
-        issue = {
-            configure_score_offset = require('blink-cmp-git.default.common').score_offset_origin
-        }
-    }
-}
-```
-
 ## Performance
 
 Once `async` is enabled, the completion will has no effect to your other operations.
