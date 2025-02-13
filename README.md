@@ -150,6 +150,11 @@ pre-cache when you enter insert mode or other mode you can input
 > For `gitlab` users, see [PAT](https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html)
 > to know how to get the token.
 
+> [!NOTE]
+> For [octo.nvim](https://github.com/pwntester/octo.nvim) users, `blink-cmp-git` support it by
+> default. By default, when you are in a `octo` file, `blink-cmp-git` will use the `octo`'s
+> path to get the `owner` and `repo` to fetch the items.
+
 ## Reload Cache
 
 There are many cases will make the cache out of date. For example,
