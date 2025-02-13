@@ -237,10 +237,6 @@ git_centers = {
 >
 > `kind_name` is used by those default options:
 >
-> * `git_centers.github.pr.configure_score_offset`
-> * `git_centers.gitlab.pr.configure_score_offset`
-> * `git_centers.github.issue.configure_score_offset`
-> * `git_centers.gitlab.issue.configure_score_offset`
 > * `kind_icons`
 >
 > Therefore, if you customize the `kind_name`, you should customize them too.
