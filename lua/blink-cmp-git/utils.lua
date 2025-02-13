@@ -9,6 +9,7 @@ function M.is_inside_git_repo()
         command = 'git',
         args = { 'rev-parse', '--is-inside-work-tree' },
         cwd = M.get_cwd(),
+        env = M.get_job_default_env(),
         on_exit = function(_, return_value, _)
             res = return_value == 0
         end
@@ -28,6 +29,14 @@ end
 --- @return boolean
 function M.command_found(command)
     return vim.fn.executable(command) == 1
+end
+
+function M.get_job_default_env()
+    return vim.tbl_extend('force', vim.fn.environ(), {
+        CLICOLOR_FORCE = '0',
+        CLICOLOR = '0',
+        PAGER = '',
+    })
 end
 
 function M.get_repo_owner_and_repo(do_url_encode)
@@ -122,6 +131,7 @@ function M.get_git_repo_absolute_path()
         command = 'git',
         args = { 'rev-parse', '--show-toplevel' },
         cwd = M.get_cwd(),
+        env = M.get_job_default_env(),
         on_exit = function(j, return_value, _)
             if return_value == 0 then
                 result = table.concat(j:result(), '\n')

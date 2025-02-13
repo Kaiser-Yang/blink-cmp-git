@@ -30,10 +30,7 @@ local function create_job_from_documentation_command(documentation_command)
                 documentation_command.on_error(return_value, table.concat(j:stderr_result(), '\n'))
             end
         end,
-        env = vim.tbl_extend('force', vim.fn.environ(), {
-            CLICOLOR = '0',
-            PAGER = '',
-        }),
+        env = utils.get_job_default_env(),
     })
 end
 
@@ -81,10 +78,7 @@ local function create_job_from_feature(feature, items)
         command = command,
         args = utils.get_option(feature.get_command_args, command, token),
         cwd = utils.get_cwd(),
-        env = vim.tbl_extend('force', vim.fn.environ(), {
-            CLICOLOR = '0',
-            PAGER = '',
-        }),
+        env = utils.get_job_default_env(),
         on_exit = function(j, return_value, signal)
             if signal == 9 then
                 return
