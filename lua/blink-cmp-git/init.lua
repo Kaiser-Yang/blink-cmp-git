@@ -183,18 +183,29 @@ function GitSource:run_pre_cache_jobs()
     end
 end
 
+--- @type blink-cmp-git.Options
 local latest_git_source_config = default
+--- @type blink.cmp.SourceProviderConfig
+local latest_source_provider_config
 
+--- @return blink-cmp-git.Options
 function GitSource.get_latest_git_source_config()
     return latest_git_source_config
 end
 
+--- @return blink.cmp.SourceProviderConfig
+function GitSource.get_latest_source_provider_config()
+    return latest_source_provider_config
+end
+
 --- @param opts blink-cmp-git.Options
+--- @param config blink.cmp.SourceProviderConfig
 --- @return blink-cmp-git.GCSCompletionOptions[]
-function GitSource.new(opts, _)
+function GitSource.new(opts, config)
     local self = setmetatable({}, { __index = GitSource })
     self.git_source_config = vim.tbl_deep_extend("force", default, opts or {})
     latest_git_source_config = self.git_source_config
+    latest_source_provider_config = config
 
     -- configure kind icons, set this before creating jobs
     -- so that the kind icons can be used in the jobs correctly
@@ -209,6 +220,7 @@ function GitSource.new(opts, _)
 
     -- cache and pre-cache jobs
     self.cache = require('blink-cmp-git.cache').new()
+    self.pre_cache_jobs = {}
     local use_items_cache = utils.get_option(self.git_source_config.use_items_cache)
     local use_items_pre_cache = utils.get_option(self.git_source_config.use_items_pre_cache)
     if use_items_cache and use_items_pre_cache then
@@ -229,7 +241,7 @@ function GitSource.new(opts, _)
         end
     end, { nargs = 0 })
     vim.api.nvim_create_augroup(blink_cmp_git_autocmd_group, { clear = true })
-    vim.api.nvim_create_autocmd('BufEnter', {
+    vim.api.nvim_create_autocmd({ 'InsertEnter' }, {
         group = blink_cmp_git_autocmd_group,
         callback = function()
             if self.git_source_config.should_reload_cache() then

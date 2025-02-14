@@ -66,12 +66,9 @@ Add the plugin to your packer managers, and make sure it is loaded before `blink
 git = {
     module = 'blink-cmp-git',
     name = 'Git',
-    -- enabled this source at the beginning to make it possible to pre-cache
-    -- at very beginning
-    enabled = true,
-    -- only show this source when filetype is gitcommit or markdown
-    should_show_items = function()
-        return vim.o.filetype == 'gitcommit' or vim.o.filetype == 'markdown'
+    -- only enable this source when filetype is gitcommit, markdown, or 'octo'
+    enabled = function()
+        return vim.tbl_contains({ 'octo', 'gitcommit', 'markdown' }, vim.bo.filetype)
     end,
     --- @module 'blink-cmp-git'
     --- @type blink-cmp-git.Options
@@ -143,6 +140,7 @@ pre-cache when you enter insert mode or other mode you can input
 > For `github` users, if you customize the `get_token`, you should see those below to know
 > which permissions are required:
 >
+> * [commit (for `octo.nvim` users)](https://docs.github.com/en/rest/commits/commits?apiVersion=2022-11-28#list-commits)
 > * [issue](https://docs.github.com/en/rest/issues/issues?apiVersion=2022-11-28#list-repository-issues)
 > * [pull-request](https://docs.github.com/en/rest/pulls/pulls?apiVersion=2022-11-28#list-pull-requests)
 > * [mention](https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28#list-repository-contributors)
@@ -164,9 +162,9 @@ reload the cache: `BlinkCmpGitReloadCache`. This command will clear all the cach
 `use_items_pre_cache` is enabled (default to `true`), it will pre-cache again.
 
 `blink-cmp-git` will create a auto command which uses `should_reload_cache` to determine
-whether or not to reload cache when entering a buffer.
-The default `should_reload_cache` will return `true` when `cwd` changed to another
-`git` repository.
+whether or not to reload cache when entering insert mode.
+The default `should_reload_cache` will return `true` when detecting another `git` repository
+from `octo` or `cwd`.
 
 > [!NOTE]
 >
