@@ -46,8 +46,8 @@ function M.encode_uri_component(str)
 end
 
 function M.get_repo_owner_and_repo_from_octo()
-    if vim.o.filetype == 'octo' then
-        local owner, repo = string.match(vim.fn.expand('%:p:h'), '^octo://([^/]+)/([^/]+)')
+    if vim.bo.filetype == 'octo' then
+        local owner, repo = vim.fn.expand('%:p:h'):match('^octo://([^/]+)/([^/]+)')
         if owner and repo then
             return owner .. '/' .. repo
         end
@@ -150,6 +150,9 @@ end
 --- Return nil if not in a git repo
 --- @return string?
 function M.get_git_repo_absolute_path()
+    if vim.bo.filetype == 'octo' then
+        return vim.fn.expand('%:p:h'):match('^octo://[^/]+/[^/]+')
+    end
     if not M.command_found('git') then return nil end
     local result
     ---@diagnostic disable-next-line: missing-fields

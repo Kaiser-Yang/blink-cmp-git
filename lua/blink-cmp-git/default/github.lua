@@ -65,24 +65,12 @@ local function default_github_get_command()
     return utils.command_found('gh') and 'gh' or 'curl'
 end
 
-local function basic_args_for_github_api(token)
-    local args = {
-        '-H', 'Accept: application/vnd.github+json',
-        '-H', 'X-GitHub-Api-Version: 2022-11-28',
-    }
-    if utils.truthy(token) then
-        table.insert(args, '-H')
-        table.insert(args, 'Authorization: Bearer ' .. token)
-    end
-    return args
-end
-
 local function default_github_mention_get_documentation(item)
     return {
         get_token = '',
         get_command = default_github_get_command,
         get_command_args = function(command, token)
-            local args = basic_args_for_github_api(token)
+            local args = common.basic_args_for_github_api(token)
             if command == 'curl' then
                 table.insert(args, '-s')
                 table.insert(args, '-f')
@@ -107,25 +95,6 @@ local function default_github_mention_get_documentation(item)
     }
 end
 
-local function default_github_pr_issue_mention_get_command_args(command, token, type_name)
-    local args = basic_args_for_github_api(token)
-    if command == 'curl' then
-        table.insert(args, '-s')
-        table.insert(args, '-f')
-        table.insert(args, 'https://api.github.com/repos/' .. utils.get_repo_owner_and_repo() .. '/' ..
-            type_name ..
-            ((type_name == 'issues' or type_name == 'pulls') and '?state=open' or '')
-        )
-    else
-        table.insert(args, 1, 'api')
-        table.insert(args, 'repos/' .. utils.get_repo_owner_and_repo() .. '/' ..
-            type_name ..
-            ((type_name == 'issues' or type_name == 'pulls') and '?state=open' or '')
-        )
-    end
-    return args
-end
-
 local function default_github_issue_separate_output(output)
     local issues_and_prs = common.json_array_separator(output)
     -- `github` api return prs for issues, so we need to filter out prs
@@ -146,7 +115,7 @@ return {
         get_token = '',
         get_command = default_github_get_command,
         get_command_args = function(command, token)
-            return default_github_pr_issue_mention_get_command_args(command, token, 'issues')
+            return common.github_repo_get_command_args(command, token, 'issues')
         end,
         insert_text_trailing = ' ',
         separate_output = default_github_issue_separate_output,
@@ -163,7 +132,7 @@ return {
         get_token = '',
         get_command = default_github_get_command,
         get_command_args = function(command, token)
-            return default_github_pr_issue_mention_get_command_args(command, token, 'pulls')
+            return common.github_repo_get_command_args(command, token, 'pulls')
         end,
         insert_text_trailing = ' ',
         separate_output = common.json_array_separator,
@@ -180,7 +149,7 @@ return {
         get_token = '',
         get_command = default_github_get_command,
         get_command_args = function(command, token)
-            return default_github_pr_issue_mention_get_command_args(command, token, 'contributors')
+            return common.github_repo_get_command_args(command, token, 'contributors')
         end,
         insert_text_trailing = ' ',
         separate_output = common.json_array_separator,
