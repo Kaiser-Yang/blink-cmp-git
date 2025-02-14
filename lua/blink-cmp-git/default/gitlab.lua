@@ -124,16 +124,14 @@ local function default_gitlab_mr_issue_mention_get_command_args(command, token, 
         table.insert(args,
             'https://gitlab.com/api/v4/projects/' ..
             utils.get_repo_owner_and_repo(true) .. '/' ..
-            type_name ..
-            ((type_name == 'merge_requests' or type_name == 'issues') and '?state=opened' or '')
+            type_name
         )
     else
         table.insert(args, 1, 'api')
         table.insert(args,
             'projects/' ..
             utils.get_repo_owner_and_repo(true) .. '/' ..
-            type_name ..
-            ((type_name == 'merge_requests' or type_name == 'issues') and '?state=all' or '')
+            type_name
         )
     end
     return args
