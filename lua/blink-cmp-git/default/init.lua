@@ -4,6 +4,13 @@ log.setup({ title = 'blink-cmp-git' })
 
 local last_git_repo
 local function default_should_reload_cache()
+    -- Do not reload cache when the buffer is a prompt buffer
+    -- or the source provider is disabled
+    if vim.bo.buftype == 'prompt' or
+        not utils.source_provider_enabled()
+    then
+        return false
+    end
     if last_git_repo == nil then
         last_git_repo = utils.get_git_repo_absolute_path()
         if not last_git_repo then
