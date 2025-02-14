@@ -31,7 +31,16 @@ local function default_before_reload_cache()
 end
 
 local function default_get_remote_name()
-    return 'origin'
+    local possible_remotes = {
+        'upstream',
+        'origin',
+    }
+    for _, remote in ipairs(possible_remotes) do
+        if utils.truthy(utils.get_repo_remote_url(remote)) then
+            return remote
+        end
+    end
+    return ''
 end
 
 --- @type blink-cmp-git.Options

@@ -120,13 +120,14 @@ function M.get_remote_name()
     return require('blink-cmp-git').get_latest_git_source_config().get_remote_name()
 end
 
-function M.get_repo_remote_url()
+function M.get_repo_remote_url(remote_name)
+    remote_name = remote_name or M.get_remote_name()
     if not M.command_found('git') then return '' end
     local output = ''
     ---@diagnostic disable-next-line: missing-fields
     Job:new({
         command = 'git',
-        args = { 'remote', 'get-url', M.get_remote_name() },
+        args = { 'remote', 'get-url', remote_name },
         cwd = M.get_cwd(),
         on_exit = function(job, return_value, _)
             if return_value ~= 0 then
