@@ -47,9 +47,11 @@ local function default_commit_get_documentation(item)
     if type(item) == 'table' then
         return
             'commit ' .. item.sha .. '\n' ..
-            'Author:     ' .. item.commit.author.name .. ' <' .. item.commit.author.email .. '>\n' ..
+            'Author:     ' .. item.commit.author.name ..
+            ' <' .. item.commit.author.email .. '>\n' ..
             'AuthorDate: ' .. item.commit.author.date .. '\n' ..
-            'Commit:     ' .. item.commit.committer.name .. ' <' .. item.commit.committer.email .. '>\n' ..
+            'Commit:     ' .. item.commit.committer.name ..
+            ' <' .. item.commit.committer.email .. '>\n' ..
             'CommitDate: ' .. item.commit.committer.date .. '\n' ..
             '\n' ..
             item.commit.message

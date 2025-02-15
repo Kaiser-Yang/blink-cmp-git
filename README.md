@@ -208,6 +208,10 @@ git_centers = {
     commit = {
         -- use the first 7 hash and the first line of the commit message as the label
         get_label = function(item)
+            -- For `octo.nvim` users, the `item` is a table
+            if type(item) == 'table' then
+                return item.sha:sub(1, 7) .. ' ' .. item.commit.message:match('([^\n]*)')
+            end
             return item:match('commit ([^\n]*)'):sub(1, 7) .. ' ' .. item:match('\n\n%s*([^\n]*)')
         end,
         -- use 'Commit' as the kind name
@@ -216,10 +220,27 @@ git_centers = {
         end,
         -- use the first 7 hash as the insert text
         get_insert_text = function(item)
+            -- For `octo.nvim` users, the `item` is a table
+            if type(item) == 'table' then
+                return item.sha:sub(1, 7)
+            end
             return item:match('commit ([^\n]*)'):sub(1, 7)
         end,
         -- use the whole commit message as the documentation
         get_documentation = function(item)
+            -- For `octo.nvim` users, the `item` is a table
+            if type(item) == 'table' then
+                return
+                    'commit ' .. item.sha .. '\n' ..
+                    'Author:     ' .. item.commit.author.name ..
+                        ' <' .. item.commit.author.email .. '>\n' ..
+                    'AuthorDate: ' .. item.commit.author.date .. '\n' ..
+                    'Commit:     ' .. item.commit.committer.name ..
+                        ' <' .. item.commit.committer.email .. '>\n' ..
+                    'CommitDate: ' .. item.commit.committer.date .. '\n' ..
+                    '\n' ..
+                    item.commit.message
+            end
             return item
             -- or you can use `blink-cmp-git.DocumentationCommand` to get the documentation
             -- return {
