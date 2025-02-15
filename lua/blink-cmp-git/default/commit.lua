@@ -53,7 +53,6 @@ local function default_commit_get_documentation(item)
             'Commit:     ' .. item.commit.committer.name ..
             ' <' .. item.commit.committer.email .. '>\n' ..
             'CommitDate: ' .. item.commit.committer.date .. '\n' ..
-            '\n' ..
             item.commit.message
     end
     return item
