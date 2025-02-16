@@ -45,5 +45,8 @@
 --- @field kind_icons? table<string, string>
 --- @field get_cwd? fun(): string
 --- @field get_remote_name? fun(): string
+--- @field kind_highlight? string|blink.cmp.DrawHighlight[]|fun(context: blink.cmp.DrawItemContext, text: string): (string|blink.cmp.DrawHighlight[]|nil)
+--- @field kind_icon_highlight? string|blink.cmp.DrawHighlight[]|fun(context: blink.cmp.DrawItemContext, text: string): (string|blink.cmp.DrawHighlight[]|nil)
+--- @field label_highlight? string|blink.cmp.DrawHighlight[]|fun(context: blink.cmp.DrawItemContext, text: string): (string|blink.cmp.DrawHighlight[]|nil)
 --- @field commit? blink-cmp-git.GCSCompletionOptions
 --- @field git_centers? table<blink-cmp-git.GCSGitCenterKeys, blink-cmp-git.GCSOptions>
