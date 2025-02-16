@@ -43,6 +43,42 @@ local function default_get_remote_name()
     return ''
 end
 
+local function default_kind_highlight(context, _)
+    return 'BlinkCmpGitKind' .. context.kind
+end
+
+local function default_kind_icon_highlight(context, _)
+    return 'BlinkCmpGitKindIcon' .. context.kind
+end
+
+local function default_label_highlight(context, _)
+    local id_len = #(context.label:match('^[^%s]+'))
+    -- Find id like #123, !123 or hash,
+    -- but not for mention
+    if id_len > 0 and id_len ~= #context.label then
+        local highlights = {
+            {
+                0,
+                id_len,
+                group = 'BlinkCmpGitLabel' .. context.kind .. 'Id'
+            },
+            {
+                id_len,
+                #context.label - id_len,
+                group = 'BlinkCmpGitLabel' .. context.kind .. 'Rest'
+            }
+        }
+        -- characters matched on the label by the fuzzy matcher
+        for _, idx in ipairs(context.label_matched_indices) do
+            table.insert(highlights,
+                { idx, idx + 1, group = 'BlinkCmpLabelMatch' })
+        end
+        return highlights
+    end
+    -- return nil to use the default highlight
+    return nil
+end
+
 --- @type blink-cmp-git.Options
 return {
     async = true,
@@ -60,6 +96,9 @@ return {
     },
     get_cwd = vim.fn.getcwd,
     get_remote_name = default_get_remote_name,
+    kind_highlight = default_kind_highlight,
+    kind_icon_highlight = default_kind_icon_highlight,
+    label_highlight = default_label_highlight,
     commit = require('blink-cmp-git.default.commit'),
     git_centers = {
         github = require('blink-cmp-git.default.github'),

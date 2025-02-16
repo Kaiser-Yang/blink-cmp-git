@@ -299,21 +299,29 @@ commit = {
 
 ### How to customize the highlight?
 
-Since `v0.3.0`, the completion items' kind will be determined by the `kind_name` field from the
-`separate_output` function. From the documentation of `blink.cmp`, `BlinkCmpKind<kind_name>` is
-available for you to customize the highlight. By default, `blink-cmp-git` will use the
-`BlinkCmpKind` for all the kinds. If you want to customize the highlight for `commit`, you can use
-those below:
+Suppose the item in your completion list is like this below:
 
-```lua
--- `Commit` is from the `get_kind_name` function
--- The `kind_name` for default are `Commit`, `Issue`, `PR`, `MR` and 'Mention'.
--- If you customize the `separate_output`, you should update `Commit` with your `kind_name`
-vim.api.nvim_set_hl(0, 'BlinkCmpKind' .. 'Commit', { default = false, fg = '#a6e3a1' })
+```
+ PR #1 Add a new feature
 ```
 
+| Highlight Group Name              | Description             |
+|-----------------------------------|-------------------------|
+| `BlinkCmpGitKind<kind_name>`      | For ``                 |
+| `BlinkCmpGitKindIcon<kind_name>`  | For `PR`                |
+| `BlinkCmpGitLabel<kind_name>Id`   | For `#1`                |
+| `BlinkCmpGitLabel<kind_name>Rest` | For `Add a new feature` |
+
+
+> [!NOTE]
+> The `Id` part is got by seperating the label by whitespaces, if you customize the `get_label`,
+> you may need to customize the `label_highlight` too.
+> See [default.lua](./lua/blink-cmp-git/default/init.lua) to learn how to customize it.
+
+The default `<kind_name>` are `Commit`, `Issue`, `PR`, `MR`, and `Mention`.
+
 Besides, you can also customize different highlight for open, closed,
-and merged pull requests or issues.
+locked and merged pull requests or issues.
 
 By default, `blink-cmp-git` will only fetch the open pull requests or issues. So you should
 customize the `api` parameters to fetch all states.
@@ -383,7 +391,7 @@ kind_icons = {
 }
 ```
 
-Here is an example for `github`-like icons' highlight:
+Here is an example for `github`-like highlight:
 
 ```lua
 local blink_cmp_kind_name_highlight = {
@@ -405,65 +413,9 @@ local blink_cmp_kind_name_highlight = {
     lockedIssue = { default = false, fg = '#f5c2e7' },
 }
 for kind_name, hl in pairs(blink_cmp_kind_name_highlight) do
-    vim.api.nvim_set_hl(0, 'BlinkCmpKind' .. kind_name, hl)
-end
-```
-
-Then, you can use this code below to customize different highlight for `#123`, `!123`, and `hash`:
-
-```lua
-local blink_cmp_git_label_name_highlight = {
-    Commit = { default = false, fg = '#a6e3a1' },
-    openPR = { default = false, fg = '#a6e3a1' },
-    openedPR = { default = false, fg = '#a6e3a1' },
-    closedPR = { default = false, fg = '#f38ba8' },
-    mergedPR = { default = false, fg = '#cba6f7' },
-    draftPR = { default = false, fg = '#9399b2' },
-    lockedPR = { default = false, fg = '#f5c2e7' },
-    openIssue = { default = false, fg = '#a6e3a1' },
-    openedIssue = { default = false, fg = '#a6e3a1' },
-    reopenedIssue = { default = false, fg = '#a6e3a1' },
-    completedIssue = { default = false, fg = '#cba6f7' },
-    closedIssue = { default = false, fg = '#cba6f7' },
-    not_plannedIssue = { default = false, fg = '#9399b2' },
-    duplicateIssue = { default = false, fg = '#9399b2' },
-    lockedIssue = { default = false, fg = '#f5c2e7' },
-}
-for kind_name, hl in pairs(blink_cmp_git_label_name_highlight) do
-    vim.api.nvim_set_hl(0, 'BlinkCmpGitLabel' .. kind_name, hl)
-end
--- This is the option for the `blink.cmp`
-completion.menu.draw.components.label.highlight = function(ctx, text)
-    if ctx.source_name == 'Git' then
-        local id_len = #(ctx.label:match('^[^%s]+'))
-        -- Find id like #123, !123 or hash,
-        -- but not for mention
-        if id_len > 0 and id_len ~= #ctx.label then
-            local highlights = {
-                {
-                    0,
-                    id_len,
-                    group = 'BlinkCmpGitLabel' .. get_kind_name(ctx.item)
-                },
-                {
-                    id_len,
-                    #ctx.label - id_len,
-                    require('blink.cmp.config.completion.menu')
-                        .default.draw.components.label
-                        .highlight(ctx, text)
-                }
-            }
-            -- characters matched on the label by the fuzzy matcher
-            for _, idx in ipairs(ctx.label_matched_indices) do
-                table.insert(highlights,
-                    { idx, idx + 1, group = 'BlinkCmpLabelMatch' })
-            end
-            return highlights
-        end
-    end
-    -- use the default highlight for other sources
-    return require('blink.cmp.config.completion.menu')
-        .default.draw.components.label.highlight(ctx, text)
+    vim.api.nvim_set_hl(0, 'BlinkCmpGitKind' .. kind_name, hl)
+    vim.api.nvim_set_hl(0, 'BlinkCmpGitKindIcon' .. kind_name, hl)
+    vim.api.nvim_set_hl(0, 'BlinkCmpGitLabel' .. kind_name .. 'Id', hl)
 end
 ```
 

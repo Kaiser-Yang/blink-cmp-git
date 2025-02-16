@@ -198,6 +198,35 @@ function GitSource.get_latest_source_provider_config()
     return latest_source_provider_config
 end
 
+local function configure_highlight_group(kind_name)
+    local default_hl = {
+        Issue = { default = true, fg = '#a6e3a1' },
+        Commit = { default = true, fg = '#a6e3a1' },
+        Mention = { default = true, fg = '#a6e3a1' },
+        PR = { default = true, fg = '#a6e3a1' },
+        MR = { default = true, fg = '#a6e3a1' },
+    }
+    vim.api.nvim_set_hl(0, 'BlinkCmpGitKind' .. kind_name,
+        default_hl[kind_name] or { link = 'BlinkCmpKind', default = true })
+    vim.api.nvim_set_hl(0, 'BlinkCmpGitKindIcon' .. kind_name,
+        default_hl[kind_name] or { link = 'BlinkCmpKind', default = true })
+    vim.api.nvim_set_hl(0, 'BlinkCmpGitLabel' .. kind_name .. 'Id',
+        default_hl[kind_name] or { link = 'BlinkCmpLabel', default = true })
+    vim.api.nvim_set_hl(0, 'BlinkCmpGitLabel' .. kind_name .. 'Rest',
+        { link = 'BlinkCmpLabel', default = true })
+end
+
+local function highlight_override_on_condition(condition, context, text, override, fallback)
+    local result
+    if condition then
+        result = utils.get_option(override, context, text)
+    end
+    if not result then
+        result = utils.get_option(fallback, context, text)
+    end
+    return result
+end
+
 --- @param opts blink-cmp-git.Options
 --- @param config blink.cmp.SourceProviderConfig
 --- @return blink-cmp-git.GCSCompletionOptions[]
@@ -207,15 +236,43 @@ function GitSource.new(opts, config)
     latest_git_source_config = self.git_source_config
     latest_source_provider_config = config
 
-    -- configure kind icons, set this before creating jobs
-    -- so that the kind icons can be used in the jobs correctly
+    -- configure hl, set this before creating jobs
+    -- so that the hl can be used in the jobs correctly
     local completion_item_kind = require('blink.cmp.types').CompletionItemKind
     local blink_kind_icons = require('blink.cmp.config').appearance.kind_icons
     for kind_name, icon in pairs(utils.get_option(self.git_source_config.kind_icons)) do
         completion_item_kind[#completion_item_kind + 1] = kind_name
         completion_item_kind[kind_name] = #completion_item_kind
         blink_kind_icons[kind_name] = icon
-        vim.api.nvim_set_hl(0, 'BlinkCmpKind' .. kind_name, { link = 'BlinkCmpKind', default = true })
+        configure_highlight_group(kind_name)
+    end
+    local components = require('blink.cmp.config').completion.menu.draw.components
+    -- components will never be nil
+    if components then
+        local user_kind_hl = components.kind.highlight
+        local user_kind_icon_hl = components.kind_icon.highlight
+        local user_label_hl = components.label.highlight
+        components.kind.highlight = function(context, text)
+            return highlight_override_on_condition(context.source_name == config.name,
+                context,
+                text,
+                self.git_source_config.kind_highlight,
+                user_kind_hl)
+        end
+        components.kind_icon.highlight = function(context, text)
+            return highlight_override_on_condition(context.source_name == config.name,
+                context,
+                text,
+                self.git_source_config.kind_icon_highlight,
+                user_kind_icon_hl)
+        end
+        components.label.highlight = function(context, text)
+            return highlight_override_on_condition(context.source_name == config.name,
+                context,
+                text,
+                self.git_source_config.label_highlight,
+                user_label_hl)
+        end
     end
 
     -- cache and pre-cache jobs
