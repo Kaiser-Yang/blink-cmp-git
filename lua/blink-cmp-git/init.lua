@@ -25,11 +25,6 @@ local function create_job_from_documentation_command(documentation_command)
         command = command,
         args = utils.get_option(documentation_command.get_command_args, command, token),
         cwd = utils.get_cwd(),
-        on_exit = function(j, return_value, signal)
-            if return_value ~= 0 or utils.truthy(j:stderr_result()) then
-                documentation_command.on_error(return_value, table.concat(j:stderr_result(), '\n'))
-            end
-        end,
         env = utils.get_job_default_env(),
     })
 end
@@ -133,7 +128,7 @@ function GitSource:create_pre_cache_jobs()
             local jobs_and_items = self.pre_cache_jobs[trigger]
             local next_job = create_job_from_feature(feature, jobs_and_items.items)
             if utils.truthy(jobs_and_items.jobs) then
-                jobs_and_items.jobs[#jobs_and_items.jobs]:after(function(code, signal)
+                jobs_and_items.jobs[#jobs_and_items.jobs]:after(function(_, code, signal)
                     -- shutdown
                     if signal == 9 then
                         return
@@ -458,7 +453,7 @@ function GitSource:get_completions(context, callback)
         if utils.truthy(feature_triggers) and vim.tbl_contains(feature_triggers, trigger) then
             local next_job = create_job_from_feature(feature, items)
             if utils.truthy(jobs) then
-                jobs[#jobs]:after(function(code, signal)
+                jobs[#jobs]:after(function(_, code, signal)
                     -- shutdown
                     if signal == 9 then
                         return
@@ -551,7 +546,14 @@ function GitSource:resolve(item, callback)
     end
     ---@diagnostic disable-next-line: param-type-mismatch
     local job = create_job_from_documentation_command(item.documentation)
-    job:after(function(_, _, signal)
+    job:after(function(j, return_value, signal)
+        if return_value ~= 0 or utils.truthy(j:stderr_result()) then
+            ---@diagnostic disable-next-line: undefined-field
+            if item.documentation.on_error(return_value, table.concat(j:stderr_result(), '\n')) then
+                item.documentation = nil
+                goto cache_handler
+            end
+        end
         if utils.truthy(job:result()) then
             item.documentation =
             ---@diagnostic disable-next-line: undefined-field
@@ -563,6 +565,7 @@ function GitSource:resolve(item, callback)
         else
             item.documentation = nil
         end
+        ::cache_handler::
         if use_items_cache then
             -- cache empty string
             self.cache:set({ trigger, item.label, 'documentation' }, item.documentation or '')
