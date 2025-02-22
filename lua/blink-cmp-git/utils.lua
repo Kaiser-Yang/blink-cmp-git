@@ -65,7 +65,8 @@ function M.get_repo_owner_and_repo(do_url_encode)
         if remote_url:find('github.com') then
             owner, repo = remote_url:match('github%.com[/:]([^/]+)/([^/]+)$')
         elseif remote_url:find('gitlab.com') then
-            owner, repo = remote_url:match('gitlab%.com[/:]([^/]+)/([^/]+)$')
+            -- Use (.+) for sub groups in gitlab.com
+            owner, repo = remote_url:match('gitlab%.com[/:](.+)/([^/]+)$')
         end
         if not owner or not repo then
             -- This will never happen for default configuration
