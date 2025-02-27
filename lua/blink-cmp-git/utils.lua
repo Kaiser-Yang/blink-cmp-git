@@ -60,14 +60,9 @@ function M.get_repo_owner_and_repo(do_url_encode)
     res = M.get_repo_owner_and_repo_from_octo()
     if not M.truthy(res) then
         local remote_url = M.get_repo_remote_url()
-        -- remove the trailing .git
-        remote_url = remote_url:gsub('%.git$', '')
-        if remote_url:find('github.com') then
-            owner, repo = remote_url:match('github%.com[/:]([^/]+)/([^/]+)$')
-        elseif remote_url:find('gitlab.com') then
-            -- Use (.+) for sub groups in gitlab.com
-            owner, repo = remote_url:match('gitlab%.com[/:](.+)/([^/]+)$')
-        end
+        -- remove the trailing .git, and remove the leading git@, https:// or http://
+        remote_url = remote_url:gsub('%.git$', ''):gsub('^git@', ''):gsub('^https?://', '')
+        owner, repo = remote_url:match('[/:](.+)/([^/]+)$')
         if not owner or not repo then
             -- This will never happen for default configuration
             res = ''

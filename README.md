@@ -480,7 +480,30 @@ git_centers = {
 
 ### How to customize for enterprise `github` or `gitlab`?
 
-See [how to customize the APIs](#how-to-customize-the-apis).
+Firstly, you should update the `enable` for each feature, the default `enable` will enable the
+plugin when `github.com` found for `github` repository and `gitlab.com` found for `gitlab`
+repository in your remote URLs. I'll give you an example for `github`'s issue:
+
+```lua
+git_centers = {
+    github = {
+        issue = {
+            enable = function()
+                -- Get the default enable result
+                local enable = require('blink-cmp-git.default.github')
+                    .issue
+                    .enable()
+                local utils = require('blink-cmp-git.utils')
+                -- Place your enterprise's domain here
+                return enable or utils.get_repo_remote_url():find('enterprise.example.com')
+            end,
+        }
+    }
+}
+```
+
+Then, you should see [how to customize the APIs](#how-to-customize-the-apis) to customize the
+request domain.
 
 ### How to customize the APIs?
 
