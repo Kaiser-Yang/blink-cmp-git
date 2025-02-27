@@ -496,7 +496,7 @@ git_centers = {
                 local utils = require('blink-cmp-git.utils')
                 -- Place your enterprise's domain here
                 -- Escape characters (with '%'): ( ) . % + - * ? [ ^ $
-                return enable or utils.get_repo_remote_url():find('enterprise%.do%-main%.com')
+                return enable or utils.get_repo_remote_url():find('enterprise.example.com', 1, true)
             end,
         }
     }
