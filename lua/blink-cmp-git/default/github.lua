@@ -9,7 +9,7 @@ local function default_github_enable()
     if utils.truthy(utils.get_repo_owner_and_repo_from_octo()) then
         return true
     end
-    return utils.get_repo_remote_url():find('github.com')
+    return utils.get_repo_remote_url():find('github%.com')
 end
 
 local function default_github_pr_or_issue_get_label(item)
