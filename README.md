@@ -495,7 +495,12 @@ git_centers = {
                     .enable()
                 local utils = require('blink-cmp-git.utils')
                 -- Place your enterprise's domain here
-                return enable or utils.get_repo_remote_url():find('enterprise.example.com')
+                -- When using `find` without parameters, escape special characters using '%'.
+                -- Escape characters: ( ) . % + - * ? [ ^ $
+                -- `find(pattern, start_index, plain)`
+                -- `start_index = 1` starts searching from the first character.
+                -- `plain = true` ensures an exact match instead of a pattern match.
+                return enable or utils.get_repo_remote_url():find('enterprise.example.com', 1, true)
             end,
         }
     }

@@ -24,7 +24,8 @@ function M.default_on_error(return_value, standard_error)
         return true
     end
     for _, ignored_error in pairs(default_ignored_error) do
-        if standard_error:find(ignored_error) then
+        -- always match exact case
+        if standard_error:find(ignored_error, 1, true) then
             return true
         end
     end
