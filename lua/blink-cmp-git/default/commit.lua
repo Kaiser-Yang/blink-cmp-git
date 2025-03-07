@@ -26,7 +26,7 @@ local function default_commit_separate_output(output)
 end
 
 local function default_commit_get_label(item)
-    -- There may be some commits that have no message, we just use the hast to represent them
+    -- There may be some commits that have no message, we just use the hash to represent them
     if type(item) == 'table' then
         return item.sha:sub(1, 7) .. ' ' .. ((item.commit.message or ''):match('([^\n]*)') or '')
     end
