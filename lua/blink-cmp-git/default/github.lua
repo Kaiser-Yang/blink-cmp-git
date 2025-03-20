@@ -2,13 +2,13 @@ local utils = require('blink-cmp-git.utils')
 local common = require('blink-cmp-git.default.common')
 
 local function default_github_enable()
-    if not utils.command_found('git') or
-        not utils.command_found('gh') and not utils.command_found('curl') then
+    if
+        not utils.command_found('git')
+        or not utils.command_found('gh') and not utils.command_found('curl')
+    then
         return false
     end
-    if utils.truthy(utils.get_repo_owner_and_repo_from_octo()) then
-        return true
-    end
+    if utils.truthy(utils.get_repo_owner_and_repo_from_octo()) then return true end
     return utils.get_repo_remote_url():find('github%.com')
 end
 
@@ -16,54 +16,49 @@ local function default_github_pr_or_issue_get_label(item)
     return utils.concat_when_all_true('#', item.number, ' ', item.title)
 end
 
-local function default_github_pr_get_kind_name(_)
-    return 'PR'
-end
+local function default_github_pr_get_kind_name(_) return 'PR' end
 
 local function default_github_pr_or_issue_get_insert_text(item)
     return utils.concat_when_all_true('#', item.number)
 end
 
-local function default_issue_get_kind_name(_)
-    return 'Issue'
-end
+local function default_issue_get_kind_name(_) return 'Issue' end
 
 local function default_github_pr_or_issue_get_documentation(item)
-    return utils.concat_when_all_true('#', item.number, ' ', item.title, '\n') ..
-        utils.concat_when_all_true('State: ',
-            item.locked and 'locked' or
-            item.draft and 'draft' or
-            item.merged_at and 'merged' or
-            item.state,
-            '\n') ..
-        utils.concat_when_all_true('State Reason: ', item.active_lock_reason or item.state_reason, '\n') ..
-        utils.concat_when_all_true('Author: ', item.user.login, '\n') ..
-        utils.concat_when_all_true('Created at: ', item.created_at, '\n') ..
-        utils.concat_when_all_true('Updated at: ', item.updated_at, '\n') ..
-        (
-            utils.concat_when_all_true('Merged  at: ', item.merged_at, '\n')
-            or
-            utils.concat_when_all_true('Closed  at: ', item.closed_at, '\n') ..
-            utils.concat_when_all_true('Closed by: ', item.closed_by.login, '\n')
-        ) ..
-        utils.concat_when_all_true(item.body)
+    return utils.concat_when_all_true('#', item.number, ' ', item.title, '\n')
+        .. utils.concat_when_all_true(
+            'State: ',
+            item.locked and 'locked'
+                or item.draft and 'draft'
+                or item.merged_at and 'merged'
+                or item.state,
+            '\n'
+        )
+        .. utils.concat_when_all_true(
+            'State Reason: ',
+            item.active_lock_reason or item.state_reason,
+            '\n'
+        )
+        .. utils.concat_when_all_true('Author: ', item.user.login, '\n')
+        .. utils.concat_when_all_true('Created at: ', item.created_at, '\n')
+        .. utils.concat_when_all_true('Updated at: ', item.updated_at, '\n')
+        .. (utils.concat_when_all_true('Merged  at: ', item.merged_at, '\n') or utils.concat_when_all_true(
+            'Closed  at: ',
+            item.closed_at,
+            '\n'
+        ) .. utils.concat_when_all_true('Closed by: ', item.closed_by.login, '\n'))
+        .. utils.concat_when_all_true(item.body)
 end
 
-local function default_github_mention_get_label(item)
-    return utils.concat_when_all_true(item.login)
-end
+local function default_github_mention_get_label(item) return utils.concat_when_all_true(item.login) end
 
-local function default_github_mention_get_kind_name(_)
-    return 'Mention'
-end
+local function default_github_mention_get_kind_name(_) return 'Mention' end
 
 local function default_github_mention_get_insert_text(item)
     return utils.concat_when_all_true('@', item.login)
 end
 
-local function default_github_get_command()
-    return utils.command_found('gh') and 'gh' or 'curl'
-end
+local function default_github_get_command() return utils.command_found('gh') and 'gh' or 'curl' end
 
 local function default_github_mention_get_documentation(item)
     return {
@@ -83,13 +78,13 @@ local function default_github_mention_get_documentation(item)
         end,
         resolve_documentation = function(output)
             local user_info = utils.json_decode(output)
-            return
-                utils.concat_when_all_true(user_info.login, '') ..
-                utils.concat_when_all_true(' (', user_info.name, ')') .. '\n' ..
-                utils.concat_when_all_true('Location: ', user_info.location, '\n') ..
-                utils.concat_when_all_true('Email: ', user_info.email, '\n') ..
-                utils.concat_when_all_true('Company: ', user_info.company, '\n') ..
-                utils.concat_when_all_true('Created at: ', user_info.created_at, '\n')
+            return utils.concat_when_all_true(user_info.login, '')
+                .. utils.concat_when_all_true(' (', user_info.name, ')')
+                .. '\n'
+                .. utils.concat_when_all_true('Location: ', user_info.location, '\n')
+                .. utils.concat_when_all_true('Email: ', user_info.email, '\n')
+                .. utils.concat_when_all_true('Company: ', user_info.company, '\n')
+                .. utils.concat_when_all_true('Created at: ', user_info.created_at, '\n')
         end,
         on_error = common.default_on_error,
     }
@@ -100,9 +95,7 @@ local function default_github_issue_separate_output(output)
     -- `github` api return prs for issues, so we need to filter out prs
     local issues = {}
     vim.iter(issues_and_prs):each(function(issue)
-        if issue.pull_request == nil then
-            table.insert(issues, issue)
-        end
+        if issue.pull_request == nil then table.insert(issues, issue) end
     end)
     return issues
 end

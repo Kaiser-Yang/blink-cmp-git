@@ -10,9 +10,7 @@ function M.is_inside_git_repo()
         args = { 'rev-parse', '--is-inside-work-tree' },
         cwd = M.get_cwd(),
         env = M.get_job_default_env(),
-        on_exit = function(_, return_value, _)
-            res = return_value == 0
-        end
+        on_exit = function(_, return_value, _) res = return_value == 0 end,
     }):sync()
     return res
 end
@@ -27,9 +25,7 @@ end
 
 --- @param command string
 --- @return boolean
-function M.command_found(command)
-    return vim.fn.executable(command) == 1
-end
+function M.command_found(command) return vim.fn.executable(command) == 1 end
 
 function M.get_job_default_env()
     return vim.tbl_extend('force', vim.fn.environ(), {
@@ -40,17 +36,17 @@ function M.get_job_default_env()
 end
 
 function M.encode_uri_component(str)
-    return string.gsub(str, '[^%w _%%%-%.~]', function(c)
-        return string.format('%%%02X', string.byte(c))
-    end)
+    return string.gsub(
+        str,
+        '[^%w _%%%-%.~]',
+        function(c) return string.format('%%%02X', string.byte(c)) end
+    )
 end
 
 function M.get_repo_owner_and_repo_from_octo()
     if vim.bo.filetype == 'octo' then
         local owner, repo = vim.fn.expand('%:p:h'):match('^octo://([^/]+)/([^/]+)')
-        if owner and repo then
-            return owner .. '/' .. repo
-        end
+        if owner and repo then return owner .. '/' .. repo end
     end
     return ''
 end
@@ -126,18 +122,14 @@ function M.get_repo_remote_url(remote_name)
         args = { 'remote', 'get-url', remote_name },
         cwd = M.get_cwd(),
         on_exit = function(job, return_value, _)
-            if return_value ~= 0 then
-                return
-            end
+            if return_value ~= 0 then return end
             output = table.concat(job:result(), '\n')
-        end
+        end,
     }):sync()
     return output
 end
 
-function M.get_cwd()
-    return require('blink-cmp-git').get_latest_git_source_config().get_cwd()
-end
+function M.get_cwd() return require('blink-cmp-git').get_latest_git_source_config().get_cwd() end
 
 function M.source_provider_enabled()
     return M.get_option(require('blink-cmp-git').get_latest_source_provider_config().enabled)
@@ -147,9 +139,7 @@ end
 --- Return nil if not in a git repo
 --- @return string?
 function M.get_git_repo_absolute_path()
-    if vim.bo.filetype == 'octo' then
-        return vim.fn.expand('%:p:h'):match('^octo://[^/]+/[^/]+')
-    end
+    if vim.bo.filetype == 'octo' then return vim.fn.expand('%:p:h'):match('^octo://[^/]+/[^/]+') end
     if not M.command_found('git') then return nil end
     local result
     ---@diagnostic disable-next-line: missing-fields
@@ -161,11 +151,9 @@ function M.get_git_repo_absolute_path()
         on_exit = function(j, return_value, _)
             if return_value == 0 then
                 result = table.concat(j:result(), '\n')
-                if not M.truthy(result) then
-                    result = nil
-                end
+                if not M.truthy(result) then result = nil end
             end
-        end
+        end,
     }):sync()
     return result
 end
@@ -179,9 +167,7 @@ function M.concat_when_all_true(...)
     local args = {}
     for i = 1, select('#', ...) do
         local arg = select(i, ...)
-        if not arg then
-            return ''
-        end
+        if not arg then return '' end
         table.insert(args, tostring(arg))
     end
     return table.concat(args, '')

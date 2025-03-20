@@ -1,0 +1,29 @@
+name: formatter
+
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  stylua:
+    name: Format Lua Files
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+            ref: ${{ github.head_ref }}
+
+      - name: Stylua
+        uses: JohnnyMorganz/stylua-action@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          version: latest
+          args: .
+
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: format
