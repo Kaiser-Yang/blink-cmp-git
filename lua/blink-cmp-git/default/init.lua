@@ -6,16 +6,10 @@ local last_git_repo
 local function default_should_reload_cache()
     -- Do not reload cache when the buffer is a prompt buffer
     -- or the source provider is disabled
-    if vim.bo.buftype == 'prompt' or
-        not utils.source_provider_enabled()
-    then
-        return false
-    end
+    if vim.bo.buftype == 'prompt' or not utils.source_provider_enabled() then return false end
     if last_git_repo == nil then
         last_git_repo = utils.get_git_repo_absolute_path()
-        if not last_git_repo then
-            last_git_repo = ''
-        end
+        if not last_git_repo then last_git_repo = '' end
         return false
     end
     local new_git_repo = utils.get_git_repo_absolute_path() or last_git_repo
@@ -26,9 +20,7 @@ local function default_should_reload_cache()
     return false
 end
 
-local function default_before_reload_cache()
-    log.info('Start reloading blink-cmp-git cache.')
-end
+local function default_before_reload_cache() log.info('Start reloading blink-cmp-git cache.') end
 
 local function default_get_remote_name()
     local possible_remotes = {
@@ -36,20 +28,14 @@ local function default_get_remote_name()
         'origin',
     }
     for _, remote in ipairs(possible_remotes) do
-        if utils.truthy(utils.get_repo_remote_url(remote)) then
-            return remote
-        end
+        if utils.truthy(utils.get_repo_remote_url(remote)) then return remote end
     end
     return ''
 end
 
-local function default_kind_highlight(context, _)
-    return 'BlinkCmpGitKind' .. context.kind
-end
+local function default_kind_highlight(context, _) return 'BlinkCmpGitKind' .. context.kind end
 
-local function default_kind_icon_highlight(context, _)
-    return 'BlinkCmpGitKindIcon' .. context.kind
-end
+local function default_kind_icon_highlight(context, _) return 'BlinkCmpGitKindIcon' .. context.kind end
 
 local function default_label_highlight(context, _)
     local id_len = #(context.label:match('^[^%s]+'))
@@ -60,18 +46,17 @@ local function default_label_highlight(context, _)
             {
                 0,
                 id_len,
-                group = 'BlinkCmpGitLabel' .. context.kind .. 'Id'
+                group = 'BlinkCmpGitLabel' .. context.kind .. 'Id',
             },
             {
                 id_len,
                 #context.label - id_len,
-                group = 'BlinkCmpGitLabel' .. context.kind .. 'Rest'
-            }
+                group = 'BlinkCmpGitLabel' .. context.kind .. 'Rest',
+            },
         }
         -- characters matched on the label by the fuzzy matcher
         for _, idx in ipairs(context.label_matched_indices) do
-            table.insert(highlights,
-                { idx, idx + 1, group = 'BlinkCmpLabelMatch' })
+            table.insert(highlights, { idx, idx + 1, group = 'BlinkCmpLabelMatch' })
         end
         return highlights
     end
@@ -103,5 +88,5 @@ return {
     git_centers = {
         github = require('blink-cmp-git.default.github'),
         gitlab = require('blink-cmp-git.default.gitlab'),
-    }
+    },
 }

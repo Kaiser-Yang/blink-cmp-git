@@ -11,9 +11,7 @@ function Cache.new()
     return self
 end
 
-function Cache:clear()
-    self.cache = {}
-end
+function Cache:clear() self.cache = {} end
 
 --- @param keys string|string[]
 function Cache:get(keys)
@@ -38,9 +36,7 @@ function Cache:set(keys, value)
     local last_key = nil
     local now = self.cache
     for _, key in ipairs(keys) do
-        if not now[key] then
-            now[key] = {}
-        end
+        if not now[key] then now[key] = {} end
         pre = now
         last_key = key
         now = now[key]

@@ -36,12 +36,12 @@ local function get_text_edit_range(context)
         -- This range make it possible to remove the trigger character
         start = {
             line = context.cursor[1] - 1,
-            character = context.cursor[2] - 1
+            character = context.cursor[2] - 1,
         },
         ['end'] = {
             line = context.cursor[1] - 1,
-            character = context.cursor[2]
-        }
+            character = context.cursor[2],
+        },
     }
 end
 
@@ -75,9 +75,7 @@ local function create_job_from_feature(feature, items)
         cwd = utils.get_cwd(),
         env = utils.get_job_default_env(),
         on_exit = function(j, return_value, signal)
-            if signal == 9 then
-                return
-            end
+            if signal == 9 then return end
             if return_value ~= 0 or utils.truthy(j:stderr_result()) then
                 if feature.on_error(return_value, table.concat(j:stderr_result(), '\n')) then
                     return
@@ -85,24 +83,25 @@ local function create_job_from_feature(feature, items)
             end
             if utils.truthy(j:result()) then
                 local match_list = assemble_completion_items_from_output(feature, j:result())
-                vim.iter(match_list):each(function(match)
-                    items[match] = {
-                        label = match.label,
-                        kind = require('blink.cmp.types').CompletionItemKind[match.kind_name] or 0,
-                        textEdit = {
-                            newText =
-                                match.insert_text
-                                ..
-                                (utils.get_option(feature.insert_text_trailing) or ''),
-                        },
-                        score_offset = match.score_offset,
-                        documentation = match.documentation,
-                    }
-                end)
+                vim.iter(match_list):each(
+                    function(match)
+                        items[match] = {
+                            label = match.label,
+                            kind = require('blink.cmp.types').CompletionItemKind[match.kind_name]
+                                or 0,
+                            textEdit = {
+                                newText = match.insert_text
+                                    .. (utils.get_option(feature.insert_text_trailing) or ''),
+                            },
+                            score_offset = match.score_offset,
+                            documentation = match.documentation,
+                        }
+                    end
+                )
             else
                 log.trace('search command return empty result')
             end
-        end
+        end,
     })
 end
 
@@ -130,9 +129,7 @@ function GitSource:create_pre_cache_jobs()
             if utils.truthy(jobs_and_items.jobs) then
                 jobs_and_items.jobs[#jobs_and_items.jobs]:after(function(_, code, signal)
                     -- shutdown
-                    if signal == 9 then
-                        return
-                    end
+                    if signal == 9 then return end
                     if async then
                         next_job:start()
                     else
@@ -147,9 +144,7 @@ function GitSource:create_pre_cache_jobs()
     for trigger, job_and_items in pairs(self.pre_cache_jobs) do
         -- let the last job set the cache
         job_and_items.jobs[#job_and_items.jobs]:after(function(_, _, signal)
-            if signal == 9 then
-                return
-            end
+            if signal == 9 then return end
             for key, item in pairs(job_and_items.items) do
                 self.cache:set({ trigger, item.label }, item)
             end
@@ -184,14 +179,10 @@ local latest_git_source_config = default
 local latest_source_provider_config
 
 --- @return blink-cmp-git.Options
-function GitSource.get_latest_git_source_config()
-    return latest_git_source_config
-end
+function GitSource.get_latest_git_source_config() return latest_git_source_config end
 
 --- @return blink.cmp.SourceProviderConfig
-function GitSource.get_latest_source_provider_config()
-    return latest_source_provider_config
-end
+function GitSource.get_latest_source_provider_config() return latest_source_provider_config end
 
 local function configure_highlight_group(kind_name)
     local default_hl = {
@@ -201,24 +192,32 @@ local function configure_highlight_group(kind_name)
         PR = { default = true, fg = '#a6e3a1' },
         MR = { default = true, fg = '#a6e3a1' },
     }
-    vim.api.nvim_set_hl(0, 'BlinkCmpGitKind' .. kind_name,
-        default_hl[kind_name] or { link = 'BlinkCmpKind', default = true })
-    vim.api.nvim_set_hl(0, 'BlinkCmpGitKindIcon' .. kind_name,
-        default_hl[kind_name] or { link = 'BlinkCmpKind', default = true })
-    vim.api.nvim_set_hl(0, 'BlinkCmpGitLabel' .. kind_name .. 'Id',
-        default_hl[kind_name] or { link = 'BlinkCmpLabel', default = true })
-    vim.api.nvim_set_hl(0, 'BlinkCmpGitLabel' .. kind_name .. 'Rest',
-        { link = 'BlinkCmpLabel', default = true })
+    vim.api.nvim_set_hl(
+        0,
+        'BlinkCmpGitKind' .. kind_name,
+        default_hl[kind_name] or { link = 'BlinkCmpKind', default = true }
+    )
+    vim.api.nvim_set_hl(
+        0,
+        'BlinkCmpGitKindIcon' .. kind_name,
+        default_hl[kind_name] or { link = 'BlinkCmpKind', default = true }
+    )
+    vim.api.nvim_set_hl(
+        0,
+        'BlinkCmpGitLabel' .. kind_name .. 'Id',
+        default_hl[kind_name] or { link = 'BlinkCmpLabel', default = true }
+    )
+    vim.api.nvim_set_hl(
+        0,
+        'BlinkCmpGitLabel' .. kind_name .. 'Rest',
+        { link = 'BlinkCmpLabel', default = true }
+    )
 end
 
 local function highlight_override_on_condition(condition, context, text, override, fallback)
     local result
-    if condition then
-        result = utils.get_option(override, context, text)
-    end
-    if not result then
-        result = utils.get_option(fallback, context, text)
-    end
+    if condition then result = utils.get_option(override, context, text) end
+    if not result then result = utils.get_option(fallback, context, text) end
     return result
 end
 
@@ -227,7 +226,7 @@ end
 --- @return blink-cmp-git.GCSCompletionOptions[]
 function GitSource.new(opts, config)
     local self = setmetatable({}, { __index = GitSource })
-    self.git_source_config = vim.tbl_deep_extend("force", default, opts or {})
+    self.git_source_config = vim.tbl_deep_extend('force', default, opts or {})
     latest_git_source_config = self.git_source_config
     latest_source_provider_config = config
 
@@ -248,25 +247,31 @@ function GitSource.new(opts, config)
         local user_kind_icon_hl = components.kind_icon.highlight
         local user_label_hl = components.label.highlight
         components.kind.highlight = function(context, text)
-            return highlight_override_on_condition(context.source_name == config.name,
+            return highlight_override_on_condition(
+                context.source_name == config.name,
                 context,
                 text,
                 self.git_source_config.kind_highlight,
-                user_kind_hl)
+                user_kind_hl
+            )
         end
         components.kind_icon.highlight = function(context, text)
-            return highlight_override_on_condition(context.source_name == config.name,
+            return highlight_override_on_condition(
+                context.source_name == config.name,
                 context,
                 text,
                 self.git_source_config.kind_icon_highlight,
-                user_kind_icon_hl)
+                user_kind_icon_hl
+            )
         end
         components.label.highlight = function(context, text)
-            return highlight_override_on_condition(context.source_name == config.name,
+            return highlight_override_on_condition(
+                context.source_name == config.name,
                 context,
                 text,
                 self.git_source_config.label_highlight,
-                user_label_hl)
+                user_label_hl
+            )
         end
     end
 
@@ -299,7 +304,7 @@ function GitSource.new(opts, config)
             if self.git_source_config.should_reload_cache() then
                 vim.cmd(blink_cmp_git_reload_cache_command)
             end
-        end
+        end,
     })
     -- call the function so the default last_git_repo is set
     -- defer the call to avoid getting empty last_git_repo even in a git repo
@@ -327,8 +332,10 @@ function GitSource:get_trigger_characters()
 end
 
 function GitSource:handle_items_pre_cache(context, callback)
-    if not utils.get_option(self.git_source_config.use_items_pre_cache) or
-        not utils.get_option(self.git_source_config.use_items_cache) then
+    if
+        not utils.get_option(self.git_source_config.use_items_pre_cache)
+        or not utils.get_option(self.git_source_config.use_items_cache)
+    then
         return nil
     end
     local items = {}
@@ -341,7 +348,7 @@ function GitSource:handle_items_pre_cache(context, callback)
         callback({
             is_incomplete_backward = false,
             is_incomplete_forward = false,
-            items = vim.tbl_values(items)
+            items = vim.tbl_values(items),
         })
     end
     local job_and_items = self.pre_cache_jobs[trigger]
@@ -387,9 +394,7 @@ function GitSource:handle_items_pre_cache(context, callback)
             -- Make sure this callback is the last one
             table.remove(j._additional_on_exit_callbacks)
             if signal == 9 then
-                vim.schedule(function()
-                    callback()
-                end)
+                vim.schedule(function() callback() end)
                 return
             end
             items = self.cache:get(trigger) or {}
@@ -417,20 +422,21 @@ function GitSource:get_completions(context, callback)
         callback({
             is_incomplete_backward = false,
             is_incomplete_forward = false,
-            items = vim.tbl_values(items)
+            items = vim.tbl_values(items),
         })
     end
     ---@diagnostic disable-next-line: missing-parameter
-    if not self:should_show_items(context) or
-        not context.line:sub(1, context.cursor[2]):match(context.trigger.initial_character .. '$')
+    if
+        not self:should_show_items(context)
+        or not context.line
+            :sub(1, context.cursor[2])
+            :match(context.trigger.initial_character .. '$')
     then
         transformed_callback()
         return function() end
     end
     local cancel_fun = self:handle_items_pre_cache(context, callback)
-    if cancel_fun then
-        return cancel_fun
-    end
+    if cancel_fun then return cancel_fun end
     cancel_fun = function() end
     local async = utils.get_option(self.git_source_config.async)
     local use_items_cache = utils.get_option(self.git_source_config.use_items_cache)
@@ -455,9 +461,7 @@ function GitSource:get_completions(context, callback)
             if utils.truthy(jobs) then
                 jobs[#jobs]:after(function(_, code, signal)
                     -- shutdown
-                    if signal == 9 then
-                        return
-                    end
+                    if signal == 9 then return end
                     if async then
                         next_job:start()
                     else
@@ -477,9 +481,7 @@ function GitSource:get_completions(context, callback)
     -- let the last job call the transformed_callback
     jobs[#jobs]:after(function(_, _, signal)
         if signal == 9 then
-            vim.schedule(function()
-                callback()
-            end)
+            vim.schedule(function() callback() end)
             return
         end
         if use_items_cache then
@@ -504,7 +506,8 @@ end
 
 --- @param context blink.cmp.Context
 function GitSource:should_show_items(context, _)
-    return context.trigger.initial_kind == 'trigger_character' and context.mode ~= 'cmdline'
+    return context.trigger.initial_kind == 'trigger_character'
+        and context.mode ~= 'cmdline'
         and vim.tbl_contains(self:get_trigger_characters(), context.trigger.initial_character)
 end
 
@@ -513,9 +516,7 @@ end
 function GitSource:resolve(item, callback)
     ---@diagnostic disable-next-line: undefined-field
     local trigger = item.gitSourceTrigger
-    local transformed_callback = function()
-        callback(item)
-    end
+    local transformed_callback = function() callback(item) end
     local use_items_cache = utils.get_option(self.git_source_config.use_items_cache)
     local cached_item_documentation
     if use_items_cache then
@@ -523,24 +524,18 @@ function GitSource:resolve(item, callback)
     end
     if cached_item_documentation then
         item.documentation = cached_item_documentation
-        if item.documentation == '' then
-            item.documentation = nil
-        end
+        if item.documentation == '' then item.documentation = nil end
         transformed_callback()
         return
     end
     if type(item.documentation) == 'string' or not item.documentation then
         ---@diagnostic disable-next-line: param-type-mismatch
-        if item.documentation and item.documentation:match('^%s*$') then
-            item.documentation = ''
-        end
+        if item.documentation and item.documentation:match('^%s*$') then item.documentation = '' end
         if use_items_cache then
             -- cache empty string
             self.cache:set({ trigger, item.label, 'documentation' }, item.documentation or '')
         end
-        if item.documentation == '' then
-            item.documentation = nil
-        end
+        if item.documentation == '' then item.documentation = nil end
         transformed_callback()
         return
     end
@@ -556,7 +551,7 @@ function GitSource:resolve(item, callback)
         end
         if utils.truthy(job:result()) then
             item.documentation =
-            ---@diagnostic disable-next-line: undefined-field
+                ---@diagnostic disable-next-line: undefined-field
                 item.documentation.resolve_documentation(table.concat(job:result(), '\n'))
             ---@diagnostic disable-next-line: param-type-mismatch
             if item.documentation and item.documentation:match('^%s*$') then
@@ -570,9 +565,7 @@ function GitSource:resolve(item, callback)
             -- cache empty string
             self.cache:set({ trigger, item.label, 'documentation' }, item.documentation or '')
         end
-        if item.documentation == '' then
-            item.documentation = nil
-        end
+        if item.documentation == '' then item.documentation = nil end
         vim.schedule(function() transformed_callback() end)
     end)
     if utils.get_option(self.git_source_config.async) then
@@ -587,15 +580,11 @@ function GitSource:get_enabled_features()
     local result = {}
     for _, git_center in pairs(vim.tbl_values(self.git_source_config.git_centers)) do
         for _, feature in pairs(git_center) do
-            if utils.get_option(feature.enable) then
-                table.insert(result, feature)
-            end
+            if utils.get_option(feature.enable) then table.insert(result, feature) end
         end
     end
     local commit = self.git_source_config.commit
-    if commit and utils.get_option(commit.enable) then
-        table.insert(result, commit)
-    end
+    if commit and utils.get_option(commit.enable) then table.insert(result, commit) end
     return result
 end
 
