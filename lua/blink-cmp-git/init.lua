@@ -11,6 +11,8 @@ log.setup({ title = 'blink-cmp-git' })
 --- @class blink.cmp.Source
 --- @field git_source_config blink-cmp-git.Options
 --- @field cache blink-cmp-git.Cache
+--- @field running_pre_cache_jobs vim.SystemObj[]
+--- @field running_jobs vim.SystemObj[]
 local GitSource = {}
 
 --- @param context blink.cmp.Context
@@ -49,7 +51,7 @@ end
 --- @param feature blink-cmp-git.GCSCompletionOptions
 --- @return blink.cmp.CompletionItem[]
 --- @async
-local function items_for_feature(feature)
+local function items_for_feature(feature, running_pre_cache_jobs)
     local co = coroutine.running()
     assert(co, 'This function should run inside a coroutine')
 
@@ -57,7 +59,7 @@ local function items_for_feature(feature)
     local token = utils.get_option(feature.get_token) ---@type string
     local args = utils.get_option(feature.get_command_args, command, token) ---@type string[]
 
-    vim.system(
+    local sys = vim.system(
         vim.list_extend({ command }, args),
         {
             text = true,
@@ -69,6 +71,7 @@ local function items_for_feature(feature)
             if not ok then vim.notify(debug.traceback(co, err), vim.log.levels.ERROR) end
         end)
     )
+    table.insert(running_pre_cache_jobs, sys)
     local out = coroutine.yield() --[[@as vim.SystemCompleted]]
 
     local signal = out.signal
@@ -120,7 +123,7 @@ function GitSource:create_pre_cache_jobs()
 
             coroutine.wrap(function()
                 n_coroutines = n_coroutines + 1
-                local new_items = items_for_feature(feature)
+                local new_items = items_for_feature(feature, self.running_pre_cache_jobs)
                 vim.list_extend(items.items, new_items)
                 coroutine.resume(co)
             end)()
@@ -191,6 +194,8 @@ end
 function GitSource.new(opts, config)
     local self = setmetatable({}, { __index = GitSource })
     self.git_source_config = vim.tbl_deep_extend('force', default, opts or {})
+    self.running_pre_cache_jobs = {}
+    self.running_jobs = {}
     latest_git_source_config = self.git_source_config
     latest_source_provider_config = config
 
@@ -255,7 +260,8 @@ function GitSource.new(opts, config)
         self.cache:clear()
 
         if not utils.get_option(self.git_source_config.use_items_pre_cache) then return end
-        -- TODO: cancel previous pre cache jobs
+        vim.iter(self.running_pre_cache_jobs):each(function(sys) sys:kill('TERM') end)
+        self.running_pre_cache_jobs = {}
         coroutine.wrap(function() self:create_pre_cache_jobs() end)()
     end, { nargs = 0 })
     vim.api.nvim_create_augroup(blink_cmp_git_autocmd_group, { clear = true })
@@ -361,7 +367,7 @@ function GitSource:get_completions(context, callback)
             if utils.truthy(feature_triggers) and vim.tbl_contains(feature_triggers, trigger) then
                 coroutine.wrap(function()
                     n_coroutines = n_coroutines + 1
-                    local feature_items = items_for_feature(feature)
+                    local feature_items = items_for_feature(feature, self.running_jobs)
                     vim.tbl_extend('force', items, feature_items)
                     coroutine.resume(co)
                 end)()
@@ -385,7 +391,8 @@ function GitSource:get_completions(context, callback)
     end)()
 
     return function()
-        -- TODO(TheLeoP): cancel function
+        vim.iter(self.running_jobs):each(function(sys) sys:kill('TERM') end)
+        self.running_jobs = {}
     end
 end
 
@@ -397,6 +404,7 @@ function GitSource:should_show_items(context, _)
 end
 
 function GitSource:resolve(item, callback)
+    local sys ---@type vim.SystemObj | nil
     coroutine.wrap(function()
         local documentation = item.documentation
         ---@cast documentation +blink-cmp-git.DocumentationCommand
@@ -425,14 +433,13 @@ function GitSource:resolve(item, callback)
             return
         end
 
-        -- TODO(TheLeoP): put this insise of a coroutine. Theres a callback in here
         local co = coroutine.running()
 
         local command = utils.get_option(documentation.get_command) ---@type string
         local token = utils.get_option(documentation.get_token) ---@type string
         local args = utils.get_option(documentation.get_command_args, command, token) ---@type string[]
 
-        vim.system(
+        sys = vim.system(
             vim.list_extend({ command }, args),
             {
                 text = true,
@@ -469,7 +476,9 @@ function GitSource:resolve(item, callback)
     end)()
 
     return function()
-        -- TODO(TheLeoP): cancel function?
+        if not sys then return end
+        sys:kill('TERM')
+        sys = nil
     end
 end
 
