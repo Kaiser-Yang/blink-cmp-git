@@ -1,6 +1,7 @@
 local utils = require('blink-cmp-git.utils')
 local common = require('blink-cmp-git.default.common')
 
+--- @async
 local function default_github_enable()
     if
         not utils.command_found('git')
