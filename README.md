@@ -38,7 +38,6 @@ Add the plugin to your packer managers, and make sure it is loaded before `blink
     dependencies = {
         {
             'Kaiser-Yang/blink-cmp-git',
-            dependencies = { 'nvim-lua/plenary.nvim' }
         }
         -- ... other dependencies
     },
@@ -140,10 +139,10 @@ pre-cache when you enter insert mode or other mode you can input
 > For `github` users, if you customize the `get_token`, you should see those below to know
 > which permissions are required:
 >
-> * [commit (for `octo.nvim` users)](https://docs.github.com/en/rest/commits/commits?apiVersion=2022-11-28#list-commits)
-> * [issue](https://docs.github.com/en/rest/issues/issues?apiVersion=2022-11-28#list-repository-issues)
-> * [pull-request](https://docs.github.com/en/rest/pulls/pulls?apiVersion=2022-11-28#list-pull-requests)
-> * [mention](https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28#list-repository-contributors)
+> - [commit (for `octo.nvim` users)](https://docs.github.com/en/rest/commits/commits?apiVersion=2022-11-28#list-commits)
+> - [issue](https://docs.github.com/en/rest/issues/issues?apiVersion=2022-11-28#list-repository-issues)
+> - [pull-request](https://docs.github.com/en/rest/pulls/pulls?apiVersion=2022-11-28#list-pull-requests)
+> - [mention](https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28#list-repository-contributors)
 >
 > For `gitlab` users, see [PAT](https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html)
 > to know how to get the token.
@@ -182,7 +181,7 @@ See [default.lua](./lua/blink-cmp-git/default/init.lua).
 Because all features have same fields, I'll use `commit` as an example.
 
 The `blink-cmp-git` will first run command from `get_command` and `get_command_args`. The standout
-of the command will be passed to `separate_output`. So if you want to customize the completion 
+of the command will be passed to `separate_output`. So if you want to customize the completion
 items, you should be aware of what the output of your command looks like.
 
 In most situations, you just need to customize
@@ -260,7 +259,7 @@ git_centers = {
 >
 > `kind_name` is used by those default options:
 >
-> * `kind_icons`
+> - `kind_icons`
 >
 > Therefore, if you customize the `kind_name`, you should customize them too.
 
@@ -306,12 +305,11 @@ Suppose the item in your completion list is like this below:
 ```
 
 | Highlight Group Name              | Description             |
-|-----------------------------------|-------------------------|
+| --------------------------------- | ----------------------- |
 | `BlinkCmpGitKind<kind_name>`      | For ``                 |
 | `BlinkCmpGitKindIcon<kind_name>`  | For `PR`                |
 | `BlinkCmpGitLabel<kind_name>Id`   | For `#1`                |
 | `BlinkCmpGitLabel<kind_name>Rest` | For `Add a new feature` |
-
 
 > [!NOTE]
 > The `Id` part is got by seperating the label by whitespaces, if you customize the `get_label`,
@@ -515,7 +513,7 @@ request domain.
 By default, `blink-cmp-git` will request those endpoints below:
 
 | Feature                            | API Endpoint                         |
-|------------------------------------|--------------------------------------|
+| ---------------------------------- | ------------------------------------ |
 | `github.issue`                     | `repos/OWNER/REPO/issues`            |
 | `github.pull_request`              | `repos/OWNER/REPO/pulls`             |
 | `github.mention`                   | `repos/OWNER/REPO/contributors`      |
@@ -601,11 +599,11 @@ it will be cached when you hover on one item.
 
 The release versions are something like `major.minor.patch`. When one of these numbers is increased:
 
-* `patch`: bugs are fixed or docs are added. This will not break the compatibility.
-* `minor`: compatible features are added. This may cause some configurations `deprecated`, but
-not break the compatibility.
-* `major`: incompatible features are added. All the `deprecated` configurations will be removed.
-This will break the compatibility.
+- `patch`: bugs are fixed or docs are added. This will not break the compatibility.
+- `minor`: compatible features are added. This may cause some configurations `deprecated`, but
+  not break the compatibility.
+- `major`: incompatible features are added. All the `deprecated` configurations will be removed.
+  This will break the compatibility.
 
 ## Acknowledgment
 
