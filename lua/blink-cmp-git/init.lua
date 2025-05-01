@@ -11,7 +11,6 @@ log.setup({ title = 'blink-cmp-git' })
 --- @class blink.cmp.Source
 --- @field git_source_config blink-cmp-git.Options
 --- @field cache blink-cmp-git.Cache
---- @field pre_cache_items table<string, {items: table}>
 local GitSource = {}
 
 --- @param context blink.cmp.Context
@@ -48,7 +47,6 @@ local function assemble_completion_items_from_output(feature, result)
 end
 
 --- @param feature blink-cmp-git.GCSCompletionOptions
---- @return blink.cmp.CompletionItem[]
 --- @return blink.cmp.CompletionItem[]
 --- @async
 local function items_for_feature(feature)
@@ -105,21 +103,34 @@ end
 
 --- @async
 function GitSource:create_pre_cache_jobs()
-    self.pre_cache_items = {}
+    local co = coroutine.running()
+
+    local all_items = {} ---@type table<string, {items: table}>
+    local n_coroutines = 0
+
     for _, feature in pairs(self:get_enabled_features()) do
         local triggers = utils.get_option(feature.triggers) ---@type string[]
         for _, trigger in pairs(triggers) do
-            if not self.pre_cache_items[trigger] then
-                self.pre_cache_items[trigger] = {
+            if not all_items[trigger] then
+                all_items[trigger] = {
                     items = {},
                 }
             end
-            local all_items = self.pre_cache_items[trigger]
-            local new_items = items_for_feature(feature)
-            vim.list_extend(all_items.items, new_items)
+            local items = all_items[trigger]
+
+            coroutine.wrap(function()
+                n_coroutines = n_coroutines + 1
+                local new_items = items_for_feature(feature)
+                vim.list_extend(items.items, new_items)
+                coroutine.resume(co)
+            end)()
         end
     end
-    for trigger, job_and_items in pairs(self.pre_cache_items) do
+    for _ = 1, n_coroutines do
+        coroutine.yield()
+    end
+
+    for trigger, job_and_items in pairs(all_items) do
         for _, item in pairs(job_and_items.items) do
             self.cache:set({ trigger, item.label }, item)
         end
@@ -230,7 +241,6 @@ function GitSource.new(opts, config)
 
     -- cache and pre-cache jobs
     self.cache = require('blink-cmp-git.cache').new()
-    self.pre_cache_items = {}
     local use_items_cache = utils.get_option(self.git_source_config.use_items_cache) ---@type boolean
     local use_items_pre_cache = utils.get_option(self.git_source_config.use_items_pre_cache) ---@type boolean
     if use_items_cache and use_items_pre_cache then
@@ -306,6 +316,8 @@ end
 
 function GitSource:get_completions(context, callback)
     coroutine.wrap(function()
+        local co = coroutine.running()
+
         local items = {} ---@type table<string, lsp.CompletionItem>
         local trigger = context.trigger.initial_character ---@type string
         local transformed_callback = function()
@@ -341,15 +353,24 @@ function GitSource:get_completions(context, callback)
             return
         end
 
+        local n_coroutines = 0
         local trigger_pos = context.cursor[2] - 1
         local enabled_features = self:get_enabled_features()
         for _, feature in pairs(enabled_features) do
             local feature_triggers = utils.get_option(feature.triggers) ---@type string[]
             if utils.truthy(feature_triggers) and vim.tbl_contains(feature_triggers, trigger) then
-                local feature_items = items_for_feature(feature)
-                vim.tbl_extend('force', items, feature_items)
+                coroutine.wrap(function()
+                    n_coroutines = n_coroutines + 1
+                    local feature_items = items_for_feature(feature)
+                    vim.tbl_extend('force', items, feature_items)
+                    coroutine.resume(co)
+                end)()
             end
         end
+        for _ = 1, n_coroutines do
+            coroutine.yield()
+        end
+
         if not utils.truthy(enabled_features) then
             transformed_callback()
             return
