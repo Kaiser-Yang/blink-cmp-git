@@ -59,7 +59,7 @@ local function items_for_feature(feature, running_pre_cache_jobs)
     local token = utils.get_option(feature.get_token) ---@type string
     local args = utils.get_option(feature.get_command_args, command, token) ---@type string[]
 
-    local sys = vim.system(
+    local job = vim.system(
         vim.list_extend({ command }, args),
         {
             text = true,
@@ -71,7 +71,7 @@ local function items_for_feature(feature, running_pre_cache_jobs)
             if not ok then vim.notify(debug.traceback(co, err), vim.log.levels.ERROR) end
         end)
     )
-    table.insert(running_pre_cache_jobs, sys)
+    table.insert(running_pre_cache_jobs, job)
     local out = coroutine.yield() --[[@as vim.SystemCompleted]]
 
     local signal = out.signal
@@ -260,7 +260,7 @@ function GitSource.new(opts, config)
         self.cache:clear()
 
         if not utils.get_option(self.git_source_config.use_items_pre_cache) then return end
-        vim.iter(self.running_pre_cache_jobs):each(function(sys) sys:kill('TERM') end)
+        vim.iter(self.running_pre_cache_jobs):each(function(job) job:kill('TERM') end)
         self.running_pre_cache_jobs = {}
         coroutine.wrap(function() self:create_pre_cache_jobs() end)()
     end, { nargs = 0 })
@@ -391,7 +391,7 @@ function GitSource:get_completions(context, callback)
     end)()
 
     return function()
-        vim.iter(self.running_jobs):each(function(sys) sys:kill('TERM') end)
+        vim.iter(self.running_jobs):each(function(job) job:kill('TERM') end)
         self.running_jobs = {}
     end
 end
@@ -404,7 +404,7 @@ function GitSource:should_show_items(context, _)
 end
 
 function GitSource:resolve(item, callback)
-    local sys ---@type vim.SystemObj | nil
+    local job ---@type vim.SystemObj | nil
     coroutine.wrap(function()
         local documentation = item.documentation
         ---@cast documentation +blink-cmp-git.DocumentationCommand
@@ -439,7 +439,7 @@ function GitSource:resolve(item, callback)
         local token = utils.get_option(documentation.get_token) ---@type string
         local args = utils.get_option(documentation.get_command_args, command, token) ---@type string[]
 
-        sys = vim.system(
+        job = vim.system(
             vim.list_extend({ command }, args),
             {
                 text = true,
@@ -476,9 +476,9 @@ function GitSource:resolve(item, callback)
     end)()
 
     return function()
-        if not sys then return end
-        sys:kill('TERM')
-        sys = nil
+        if not job then return end
+        job:kill('TERM')
+        job = nil
     end
 end
 
