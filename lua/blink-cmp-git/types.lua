@@ -34,7 +34,6 @@
 
 --- @alias blink-cmp-git.GCSGitCenterKeys 'github'|'gitlab'|string
 
--- TODO:
 --- @class (exact) blink-cmp-git.Options
 --- @field should_reload_cache? fun(): boolean
 --- @field before_reload_cache? fun()
