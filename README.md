@@ -154,11 +154,11 @@ pre-cache when you enter insert mode or other mode you can input
 
 ## Reload Cache
 
-There are many cases will make the cache out of date. For example,
-if your `cwd` is in a repository, later you switch your `cwd` to another repository, the cache
-will use the first repository's result. To solve this problem, there is a command to
-reload the cache: `BlinkCmpGitReloadCache`. This command will clear all the cache and if
-`use_items_pre_cache` is enabled (default to `true`), it will pre-cache again.
+There are many cases that will make the cache invalid. For example, if your
+`cwd` is in a repository, later you switch your `cwd` to another repository,
+the cache will use the first repository's result. To solve this problem, there
+is a command to reload the cache: `BlinkCmpGitReloadCache`. This command will
+clear the cache.
 
 `blink-cmp-git` will create a auto command which uses `should_reload_cache` to determine
 whether or not to reload cache when entering insert mode.
@@ -587,13 +587,13 @@ end
 
 ## Performance
 
-Once `async` is enabled, the completion will has no effect to your other operations.
-How long it will take to show results depends on the network speed and the response time
-of the git center. But, don't worries, once you enable `use_items_cache`, the items will be
-cached when you first trigger the completion by inputting `@`, `#`, or `:`
-(You can DIY the triggers). Furthermore, once you enable `use_items_pre_cache`, when the
-source is created, it will pre-cache all the items. For the documentation of `mention` feature,
-it will be cached when you hover on one item.
+`blink-cmp-git` is async. This means that completion won't block other
+operations. How long it will take to show results depends on the network speed
+and the response time of the git center. But, don't worry, the items will be
+cached when you first trigger the completion by inputting `@`, `#`, or `:` (You
+can DIY the triggers). Furthermore, when the source is created, it will
+pre-cache all the items. For the documentation of the `mention` feature, it
+will be cached when you hover on one item.
 
 ## Version Introduction
 

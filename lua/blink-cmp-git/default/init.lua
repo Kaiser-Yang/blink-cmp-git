@@ -68,10 +68,6 @@ end
 
 --- @type blink-cmp-git.Options
 return {
-    async = true,
-    use_items_cache = true,
-    -- Whether or not cache the triggers when the source is loaded
-    use_items_pre_cache = true,
     should_reload_cache = default_should_reload_cache,
     before_reload_cache = default_before_reload_cache,
     kind_icons = {

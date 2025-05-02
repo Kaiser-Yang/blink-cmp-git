@@ -12,7 +12,7 @@ log.setup({ title = 'blink-cmp-git' })
 --- @field git_source_config blink-cmp-git.Options
 --- @field cache blink-cmp-git.Cache
 --- @field running_pre_cache_jobs vim.SystemObj[]
---- @field running_jobs vim.SystemObj[]
+--- @field _after_cache fun()
 local GitSource = {}
 
 --- @param context blink.cmp.Context
@@ -51,7 +51,7 @@ end
 --- @param feature blink-cmp-git.GCSCompletionOptions
 --- @return blink.cmp.CompletionItem[]
 --- @async
-local function items_for_feature(feature, running_pre_cache_jobs)
+local function items_for_feature(feature, running_jobs)
     local co = coroutine.running()
     assert(co, 'This function should run inside a coroutine')
 
@@ -71,7 +71,7 @@ local function items_for_feature(feature, running_pre_cache_jobs)
             if not ok then vim.notify(debug.traceback(co, err), vim.log.levels.ERROR) end
         end)
     )
-    table.insert(running_pre_cache_jobs, job)
+    table.insert(running_jobs, job)
     local out = coroutine.yield() --[[@as vim.SystemCompleted]]
 
     local signal = out.signal
@@ -122,7 +122,9 @@ function GitSource:create_pre_cache_jobs()
                 n_coroutines = n_coroutines + 1
                 local new_items = items_for_feature(feature, self.running_pre_cache_jobs)
                 vim.list_extend(items, new_items)
-                coroutine.resume(co)
+
+                local ok, err = coroutine.resume(co)
+                if not ok then vim.notify(debug.traceback(co, err), vim.log.levels.ERROR) end
             end)()
         end
     end
@@ -135,6 +137,8 @@ function GitSource:create_pre_cache_jobs()
             self.cache:set({ trigger, item.label }, item)
         end
     end
+
+    if self._after_cache then self._after_cache() end
 end
 
 --- @type blink-cmp-git.Options
@@ -192,7 +196,6 @@ function GitSource.new(opts, config)
     local self = setmetatable({}, { __index = GitSource })
     self.git_source_config = vim.tbl_deep_extend('force', default, opts or {})
     self.running_pre_cache_jobs = {}
-    self.running_jobs = {}
     latest_git_source_config = self.git_source_config
     latest_source_provider_config = config
 
@@ -241,22 +244,15 @@ function GitSource.new(opts, config)
         end
     end
 
-    -- cache and pre-cache jobs
     self.cache = require('blink-cmp-git.cache').new()
-    local use_items_cache = utils.get_option(self.git_source_config.use_items_cache) ---@type boolean
-    local use_items_pre_cache = utils.get_option(self.git_source_config.use_items_pre_cache) ---@type boolean
-    if use_items_cache and use_items_pre_cache then
-        coroutine.wrap(function() self:create_pre_cache_jobs() end)()
-    end
+    coroutine.wrap(function() self:create_pre_cache_jobs() end)()
 
     -- reload cache command and autocmd
     vim.api.nvim_create_user_command(blink_cmp_git_reload_cache_command, function()
         self.git_source_config.before_reload_cache()
 
-        if not utils.get_option(self.git_source_config.use_items_cache) then return end
         self.cache:clear()
 
-        if not utils.get_option(self.git_source_config.use_items_pre_cache) then return end
         vim.iter(self.running_pre_cache_jobs):each(function(job) job:kill('TERM') end)
         self.running_pre_cache_jobs = {}
         coroutine.wrap(function() self:create_pre_cache_jobs() end)()
@@ -294,46 +290,15 @@ function GitSource:get_trigger_characters()
     return result
 end
 
-function GitSource:handle_items_pre_cache(context, callback)
-    if
-        not utils.get_option(self.git_source_config.use_items_pre_cache)
-        or not utils.get_option(self.git_source_config.use_items_cache)
-    then
-        return
-    end
-
-    local items = {} ---@type lsp.CompletionItem[]
-    local trigger = context.trigger.initial_character
-
-    items = self.cache:get(trigger) or {}
-    for _, item in pairs(items) do
-        item.textEdit.range = get_text_edit_range(context)
-        item.gitSourceTrigger = trigger
-    end
-    callback({
-        is_incomplete_backward = false,
-        is_incomplete_forward = false,
-        items = vim.tbl_values(items),
-    })
-end
+---@param context blink.cmp.Context
+---@param callback function
+function GitSource:handle_items_pre_cache(context, callback) end
 
 function GitSource:get_completions(context, callback)
     coroutine.wrap(function()
         local co = coroutine.running()
 
-        local items = {} ---@type table<string, lsp.CompletionItem>
         local trigger = context.trigger.initial_character ---@type string
-        local transformed_callback = function()
-            for _, item in pairs(items) do
-                item.textEdit.range = get_text_edit_range(context)
-                item.gitSourceTrigger = trigger
-            end
-            callback({
-                is_incomplete_backward = false,
-                is_incomplete_forward = false,
-                items = items,
-            })
-        end
         if
             ---@diagnostic disable-next-line: missing-parameter
             not self:should_show_items(context)
@@ -341,56 +306,38 @@ function GitSource:get_completions(context, callback)
                 :sub(1, context.cursor[2])
                 :match(context.trigger.initial_character .. '$')
         then
-            transformed_callback()
+            callback()
             return
         end
 
-        self:handle_items_pre_cache(context, callback)
-
-        local use_items_cache = utils.get_option(self.git_source_config.use_items_cache) ---@type boolean
-        local cached_items ---@type table<string, lsp.CompletionItem>|nil
-        if use_items_cache then cached_items = self.cache:get(trigger) end
-        if cached_items then
-            items = cached_items
-            transformed_callback()
-            return
-        end
-
-        local n_coroutines = 0
-        local trigger_pos = context.cursor[2] - 1
-        local enabled_features = self:get_enabled_features()
-        for _, feature in pairs(enabled_features) do
-            local feature_triggers = utils.get_option(feature.triggers) ---@type string[]
-            if utils.truthy(feature_triggers) and vim.tbl_contains(feature_triggers, trigger) then
-                coroutine.wrap(function()
-                    n_coroutines = n_coroutines + 1
-                    local feature_items = items_for_feature(feature, self.running_jobs)
-                    vim.tbl_extend('force', items, feature_items)
-                    coroutine.resume(co)
-                end)()
+        local items = self.cache:get(trigger) ---@type table<string, lsp.CompletionItem>
+        if not items then
+            self._after_cache = function()
+                local ok, err = coroutine.resume(co)
+                if not ok then vim.notify(debug.traceback(co, err), vim.log.levels.ERROR) end
             end
-        end
-        for _ = 1, n_coroutines do
             coroutine.yield()
+            items = self.cache:get(trigger) ---@type table<string, lsp.CompletionItem>
         end
 
-        if not utils.truthy(enabled_features) then
-            transformed_callback()
-            return
-        end
-
-        if use_items_cache then
-            for _, item in pairs(items) do
-                self.cache:set({ trigger, item.label }, item)
-            end
-        end
-        transformed_callback()
+        items = vim.iter(items)
+            :map(function(key, item)
+                item.textEdit.range = get_text_edit_range(context)
+                item.gitSourceTrigger = trigger
+                return key, item
+            end)
+            :fold({}, function(acc, key, item)
+                acc[key] = item
+                return acc
+            end)
+        callback({
+            is_incomplete_backward = false,
+            is_incomplete_forward = false,
+            items = vim.tbl_values(items),
+        })
     end)()
 
-    return function()
-        vim.iter(self.running_jobs):each(function(job) job:kill('TERM') end)
-        self.running_jobs = {}
-    end
+    return function() end
 end
 
 --- @param context blink.cmp.Context
@@ -407,12 +354,8 @@ function GitSource:resolve(item, callback)
         ---@cast documentation +blink-cmp-git.DocumentationCommand
 
         ---@diagnostic disable-next-line: undefined-field
-        local trigger = item.gitSourceTrigger
-        local use_items_cache = utils.get_option(self.git_source_config.use_items_cache) ---@type boolean
-        local cached_item_documentation
-        if use_items_cache then
-            cached_item_documentation = self.cache:get({ trigger, item.label, 'documentation' })
-        end
+        local trigger = item.gitSourceTrigger ---@type string
+        local cached_item_documentation = self.cache:get({ trigger, item.label, 'documentation' })
         if cached_item_documentation then
             documentation = cached_item_documentation
             if documentation == '' then documentation = nil end
@@ -421,10 +364,8 @@ function GitSource:resolve(item, callback)
         end
         if type(documentation) == 'string' or not documentation then
             if documentation and documentation:match('^%s*$') then documentation = '' end
-            if use_items_cache then
-                -- cache empty string
-                self.cache:set({ trigger, item.label, 'documentation' }, documentation or '')
-            end
+            -- cache empty string
+            self.cache:set({ trigger, item.label, 'documentation' }, documentation or '')
             if documentation == '' then documentation = nil end
             callback(item)
             return
@@ -464,10 +405,8 @@ function GitSource:resolve(item, callback)
             documentation = nil
         end
         ::cache_handler::
-        if use_items_cache then
-            -- cache empty string
-            self.cache:set({ trigger, item.label, 'documentation' }, documentation or '')
-        end
+        -- cache empty string
+        self.cache:set({ trigger, item.label, 'documentation' }, documentation or '')
         if documentation == '' then documentation = nil end
         callback(item)
     end)()
