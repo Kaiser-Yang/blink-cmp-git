@@ -20,9 +20,6 @@ function M.is_inside_git_repo()
     )
     local out = coroutine.yield() --[[@as vim.SystemCompleted]]
 
-    vim.schedule(function() coroutine.resume(co) end)
-    coroutine.yield()
-
     return out.code == 0
 end
 
@@ -131,9 +128,6 @@ function M.get_repo_remote_url(remote_name)
 
     remote_name = remote_name or M.get_remote_name()
     if not M.command_found('git') then return '' end
-
-    vim.schedule(function() coroutine.resume(co) end)
-    coroutine.yield()
 
     vim.system(
         { 'git', 'remote', 'get-url', remote_name },
