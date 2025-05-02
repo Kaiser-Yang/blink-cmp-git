@@ -107,6 +107,7 @@ end
 --- @async
 function GitSource:create_pre_cache_jobs()
     local co = coroutine.running()
+    assert(co, 'This function should run inside a coroutine')
 
     local all_items = {} ---@type table<string, {items: table}>
     local n_coroutines = 0
