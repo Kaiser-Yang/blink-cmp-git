@@ -255,6 +255,7 @@ function GitSource.new(opts, config)
 
         vim.iter(self.running_pre_cache_jobs):each(function(job) job:kill('TERM') end)
         self.running_pre_cache_jobs = {}
+        self._after_cache = nil
         coroutine.wrap(function() self:create_pre_cache_jobs() end)()
     end, { nargs = 0 })
     vim.api.nvim_create_augroup(blink_cmp_git_autocmd_group, { clear = true })
