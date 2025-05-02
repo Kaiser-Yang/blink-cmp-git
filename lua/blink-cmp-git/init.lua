@@ -12,7 +12,7 @@ log.setup({ title = 'blink-cmp-git' })
 --- @field git_source_config blink-cmp-git.Options
 --- @field cache blink-cmp-git.Cache
 --- @field running_pre_cache_jobs vim.SystemObj[]
---- @field _after_cache fun()
+--- @field _after_cache? fun()
 local GitSource = {}
 
 --- @param context blink.cmp.Context
@@ -313,6 +313,7 @@ function GitSource:get_completions(context, callback)
         local items = self.cache:get(trigger) ---@type table<string, lsp.CompletionItem>
         if not items then
             self._after_cache = function()
+                self._after_cache = nil
                 local ok, err = coroutine.resume(co)
                 if not ok then vim.notify(debug.traceback(co, err), vim.log.levels.ERROR) end
             end
