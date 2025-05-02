@@ -109,23 +109,19 @@ function GitSource:create_pre_cache_jobs()
     local co = coroutine.running()
     assert(co, 'This function should run inside a coroutine')
 
-    local all_items = {} ---@type table<string, {items: table}>
+    local all_items = {} ---@type table<string, lsp.CompletionItem[]>
     local n_coroutines = 0
 
     for _, feature in pairs(self:get_enabled_features()) do
         local triggers = utils.get_option(feature.triggers) ---@type string[]
         for _, trigger in pairs(triggers) do
-            if not all_items[trigger] then
-                all_items[trigger] = {
-                    items = {},
-                }
-            end
+            if not all_items[trigger] then all_items[trigger] = {} end
             local items = all_items[trigger]
 
             coroutine.wrap(function()
                 n_coroutines = n_coroutines + 1
                 local new_items = items_for_feature(feature, self.running_pre_cache_jobs)
-                vim.list_extend(items.items, new_items)
+                vim.list_extend(items, new_items)
                 coroutine.resume(co)
             end)()
         end
@@ -135,7 +131,7 @@ function GitSource:create_pre_cache_jobs()
     end
 
     for trigger, items in pairs(all_items) do
-        for _, item in pairs(items.items) do
+        for _, item in ipairs(items) do
             self.cache:set({ trigger, item.label }, item)
         end
     end
