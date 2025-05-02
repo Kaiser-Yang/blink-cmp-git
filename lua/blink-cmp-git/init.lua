@@ -133,8 +133,8 @@ function GitSource:create_pre_cache_jobs()
         coroutine.yield()
     end
 
-    for trigger, job_and_items in pairs(all_items) do
-        for _, item in pairs(job_and_items.items) do
+    for trigger, items in pairs(all_items) do
+        for _, item in pairs(items.items) do
             self.cache:set({ trigger, item.label }, item)
         end
     end
