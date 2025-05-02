@@ -35,7 +35,7 @@
 --- @alias blink-cmp-git.GCSGitCenterKeys 'github'|'gitlab'|string
 
 -- TODO:
---  use_items_cache
+-- remove use_items_cache
 --- @class (exact) blink-cmp-git.Options
 --- @field use_items_cache? boolean|fun(): boolean
 --- @field use_items_pre_cache? boolean|fun(): boolean
