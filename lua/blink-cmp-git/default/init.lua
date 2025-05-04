@@ -2,8 +2,13 @@ local utils = require('blink-cmp-git.utils')
 local log = require('blink-cmp-git.log')
 log.setup({ title = 'blink-cmp-git' })
 
-local last_git_repo
+local last_git_repo ---@type string?
+
+--- @async
 local function default_should_reload_cache()
+    local co = coroutine.running()
+    assert(co, 'This function should run inside a coroutine')
+
     -- Do not reload cache when the buffer is a prompt buffer
     -- or the source provider is disabled
     if vim.bo.buftype == 'prompt' or not utils.source_provider_enabled() then return false end
@@ -66,10 +71,6 @@ end
 
 --- @type blink-cmp-git.Options
 return {
-    async = true,
-    use_items_cache = true,
-    -- Whether or not cache the triggers when the source is loaded
-    use_items_pre_cache = true,
     should_reload_cache = default_should_reload_cache,
     before_reload_cache = default_before_reload_cache,
     kind_icons = {

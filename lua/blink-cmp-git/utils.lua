@@ -1,18 +1,26 @@
 local M = {}
-local Job = require('plenary.job')
 
+--- @async
 function M.is_inside_git_repo()
+    local co = coroutine.running()
+    assert(co, 'This function should run inside a coroutine')
+
     if not M.command_found('git') then return false end
-    local res = false
-    ---@diagnostic disable-next-line: missing-fields
-    Job:new({
-        command = 'git',
-        args = { 'rev-parse', '--is-inside-work-tree' },
-        cwd = M.get_cwd(),
-        env = M.get_job_default_env(),
-        on_exit = function(_, return_value, _) res = return_value == 0 end,
-    }):sync()
-    return res
+    vim.system(
+        { 'git', 'rev-parse', '--is-inside-work-tree' },
+        {
+            text = true,
+            cwd = M.get_cwd(),
+            env = M.get_job_default_env(),
+        },
+        vim.schedule_wrap(function(out)
+            local ok, err = coroutine.resume(co, out)
+            if not ok then vim.notify(debug.traceback(co, err), vim.log.levels.ERROR) end
+        end)
+    )
+    local out = coroutine.yield() --[[@as vim.SystemCompleted]]
+
+    return out.code == 0
 end
 
 function M.get_option(opt, ...)
@@ -112,20 +120,30 @@ function M.get_remote_name()
     return require('blink-cmp-git').get_latest_git_source_config().get_remote_name()
 end
 
+--- @param remote_name? string
+--- @async
 function M.get_repo_remote_url(remote_name)
+    local co = coroutine.running()
+    assert(co, 'This function should run inside a coroutine')
+
     remote_name = remote_name or M.get_remote_name()
     if not M.command_found('git') then return '' end
-    local output = ''
-    ---@diagnostic disable-next-line: missing-fields
-    Job:new({
-        command = 'git',
-        args = { 'remote', 'get-url', remote_name },
-        cwd = M.get_cwd(),
-        on_exit = function(job, return_value, _)
-            if return_value ~= 0 then return end
-            output = table.concat(job:result(), '\n')
-        end,
-    }):sync()
+
+    vim.system(
+        { 'git', 'remote', 'get-url', remote_name },
+        {
+            text = true,
+            cwd = M.get_cwd(),
+        },
+        vim.schedule_wrap(function(out)
+            local ok, err = coroutine.resume(co, out)
+            if not ok then vim.notify(debug.traceback(co, err), vim.log.levels.ERROR) end
+        end)
+    )
+    local out = coroutine.yield() --[[@as vim.SystemCompleted]]
+
+    local output = out.code == 0 and out.stdout or ''
+    output = output:gsub('\n', '')
     return output
 end
 
@@ -140,23 +158,28 @@ end
 --- Get the absolute path of current git repo
 --- Return nil if not in a git repo
 --- @return string?
+--- @async
 function M.get_git_repo_absolute_path()
+    local co = coroutine.running()
+    assert(co, 'This function should run inside a coroutine')
+
     if vim.bo.filetype == 'octo' then return vim.fn.expand('%:p:h'):match('^octo://[^/]+/[^/]+') end
     if not M.command_found('git') then return nil end
-    local result
-    ---@diagnostic disable-next-line: missing-fields
-    Job:new({
-        command = 'git',
-        args = { 'rev-parse', '--show-toplevel' },
-        cwd = M.get_cwd(),
-        env = M.get_job_default_env(),
-        on_exit = function(j, return_value, _)
-            if return_value == 0 then
-                result = table.concat(j:result(), '\n')
-                if not M.truthy(result) then result = nil end
-            end
-        end,
-    }):sync()
+
+    vim.system(
+        { 'git', 'rev-parse', '--show-toplevel' },
+        {
+            text = true,
+            cwd = M.get_cwd(),
+            env = M.get_job_default_env(),
+        },
+        vim.schedule_wrap(function(out)
+            local ok, err = coroutine.resume(co, out)
+            if not ok then vim.notify(debug.traceback(co, err), vim.log.levels.ERROR) end
+        end)
+    )
+    local out = coroutine.yield() --[[@as vim.SystemCompleted]]
+    local result = out.stdout ~= '' and out.stdout or nil
     return result
 end
 
