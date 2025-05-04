@@ -262,13 +262,24 @@ function GitSource.new(opts, config)
     vim.api.nvim_create_autocmd({ 'InsertEnter' }, {
         group = blink_cmp_git_autocmd_group,
         callback = function()
-            if not self.git_source_config.should_reload_cache() then return end
-            vim.cmd(blink_cmp_git_reload_cache_command)
+            coroutine.wrap(function()
+                if not self.git_source_config.should_reload_cache() then return end
+                vim.cmd(blink_cmp_git_reload_cache_command)
+            end)()
         end,
     })
-    -- call the function so the default last_git_repo is set
-    -- defer the call to avoid getting empty last_git_repo even in a git repo
-    vim.schedule_wrap(self.git_source_config.should_reload_cache)()
+
+    -- call `should_reload_cache` so the default `last_git_repo` is set
+    coroutine.wrap(function()
+        local co = coroutine.running()
+        -- defer the call to avoid getting empty `last_git_repo` even in a git repo
+        vim.schedule(function()
+            local ok, err = coroutine.resume(co)
+            if not ok then vim.notify(debug.traceback(co, err), vim.log.levels.ERROR) end
+        end)
+        coroutine.yield()
+        self.git_source_config.should_reload_cache()
+    end)()
 
     return self
 end

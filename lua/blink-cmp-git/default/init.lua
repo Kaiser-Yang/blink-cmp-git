@@ -2,24 +2,27 @@ local utils = require('blink-cmp-git.utils')
 local log = require('blink-cmp-git.log')
 log.setup({ title = 'blink-cmp-git' })
 
-local last_git_repo
+local last_git_repo ---@type string?
+
+--- @async
 local function default_should_reload_cache()
-    coroutine.wrap(function()
-        -- Do not reload cache when the buffer is a prompt buffer
-        -- or the source provider is disabled
-        if vim.bo.buftype == 'prompt' or not utils.source_provider_enabled() then return false end
-        if last_git_repo == nil then
-            last_git_repo = utils.get_git_repo_absolute_path()
-            if not last_git_repo then last_git_repo = '' end
-            return false
-        end
-        local new_git_repo = utils.get_git_repo_absolute_path() or last_git_repo
-        if new_git_repo ~= last_git_repo then
-            last_git_repo = new_git_repo
-            return true
-        end
+    local co = coroutine.running()
+    assert(co, 'This function should run inside a coroutine')
+
+    -- Do not reload cache when the buffer is a prompt buffer
+    -- or the source provider is disabled
+    if vim.bo.buftype == 'prompt' or not utils.source_provider_enabled() then return false end
+    if last_git_repo == nil then
+        last_git_repo = utils.get_git_repo_absolute_path()
+        if not last_git_repo then last_git_repo = '' end
         return false
-    end)()
+    end
+    local new_git_repo = utils.get_git_repo_absolute_path() or last_git_repo
+    if new_git_repo ~= last_git_repo then
+        last_git_repo = new_git_repo
+        return true
+    end
+    return false
 end
 
 local function default_before_reload_cache() log.info('Start reloading blink-cmp-git cache.') end
