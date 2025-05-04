@@ -132,7 +132,9 @@ end
 function M.get_cwd() return require('blink-cmp-git').get_latest_git_source_config().get_cwd() end
 
 function M.source_provider_enabled()
-    return M.get_option(require('blink-cmp-git').get_latest_source_provider_config().enabled)
+    local enabled = M.get_option(require('blink-cmp-git').get_latest_source_provider_config().enabled)
+    if enabled == nil then enabled = true end
+    return enabled
 end
 
 --- Get the absolute path of current git repo
