@@ -585,6 +585,11 @@ get_cwd = function()
 end
 ```
 
+## How to add new git platforms?
+
+I've written a post to show you how to add new git platforms. You can see
+[Contributing to blink-cmp-git](https://kaiser-yang.github.io/blog/2025/blink-cmp-git-contribution/).
+
 ## Performance
 
 `blink-cmp-git` is async. This means that completion won't block other
