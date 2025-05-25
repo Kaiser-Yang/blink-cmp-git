@@ -20,9 +20,9 @@ function M.check()
     check_command_executable('git')
     local should_check_curl = false
     should_check_curl = should_check_curl
-        or not check_command_executable('gh', '"gh" not found, will use curl instead.')
+        or not check_command_executable('gh', '"gh" not found, will use "curl" instead.')
     should_check_curl = should_check_curl
-        or not check_command_executable('glab', '"glab" not found, will use curl instead.')
+        or not check_command_executable('glab', '"glab" not found, will use "curl" instead.')
     if should_check_curl then check_command_executable('curl') end
 end
 
