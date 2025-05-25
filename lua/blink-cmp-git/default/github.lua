@@ -111,7 +111,7 @@ return {
         get_command_args = function(command, token)
             return common.github_repo_get_command_args(command, token, 'issues')
         end,
-        insert_text_trailing = ' ',
+        insert_text_trailing = '',
         separate_output = default_github_issue_separate_output,
         get_label = default_github_pr_or_issue_get_label,
         get_kind_name = default_issue_get_kind_name,
@@ -128,7 +128,7 @@ return {
         get_command_args = function(command, token)
             return common.github_repo_get_command_args(command, token, 'pulls')
         end,
-        insert_text_trailing = ' ',
+        insert_text_trailing = '',
         separate_output = common.json_array_separator,
         get_label = default_github_pr_or_issue_get_label,
         get_kind_name = default_github_pr_get_kind_name,
@@ -145,7 +145,7 @@ return {
         get_command_args = function(command, token)
             return common.github_repo_get_command_args(command, token, 'contributors')
         end,
-        insert_text_trailing = ' ',
+        insert_text_trailing = '',
         separate_output = common.json_array_separator,
         get_label = default_github_mention_get_label,
         get_kind_name = default_github_mention_get_kind_name,

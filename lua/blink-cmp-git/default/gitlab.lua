@@ -144,7 +144,7 @@ return {
         get_command_args = function(command, token)
             return default_gitlab_mr_issue_mention_get_command_args(command, token, 'issues')
         end,
-        insert_text_trailing = ' ',
+        insert_text_trailing = '',
         separate_output = common.json_array_separator,
         get_label = default_gitlab_issue_get_label,
         get_kind_name = default_gitlab_issue_get_kind_name,
@@ -167,7 +167,7 @@ return {
                 'merge_requests'
             )
         end,
-        insert_text_trailing = ' ',
+        insert_text_trailing = '',
         separate_output = common.json_array_separator,
         get_label = default_gitlab_mr_get_label,
         get_kind_name = default_gitlab_mr_get_kind_name,
@@ -186,7 +186,7 @@ return {
         get_command_args = function(command, token)
             return default_gitlab_mr_issue_mention_get_command_args(command, token, 'users')
         end,
-        insert_text_trailing = ' ',
+        insert_text_trailing = '',
         separate_output = common.json_array_separator,
         get_label = default_gitlab_mention_get_label,
         get_kind_name = default_gitlab_mention_get_kind_name,

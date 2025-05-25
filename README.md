@@ -283,18 +283,19 @@ commit = {
 }
 ```
 
-### How to remove trailing white spaces?
+### How to add trailing white spaces?
 
-By default, `blink-cmp-git` adds a space for every item when you select or accept it. If you don't
-want this, you can configure the `insert_text_trailing` for each feature. For example, those below
-will remove the trailing white spaces for `commit`:
+For example, those below will add a trailing white space for `commit`:
 
 ```lua
 commit = {
     -- or you can update it to other contents such as '\n'
-    insert_text_trailing = ''
+    insert_text_trailing = ' '
 }
 ```
+
+**NOTE**: If you enable pre-insert, switch between items with spaces may make the completion menu
+disappear. This may be related with `treesitter`.
 
 ### How to customize the highlight?
 

@@ -95,7 +95,7 @@ return {
     get_token = '',
     get_command = default_commit_get_command,
     get_command_args = default_commit_get_command_args,
-    insert_text_trailing = ' ',
+    insert_text_trailing = '',
     separate_output = default_commit_separate_output,
     get_label = default_commit_get_label,
     get_kind_name = default_commit_get_kind_name,
