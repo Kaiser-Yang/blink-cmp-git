@@ -372,6 +372,7 @@ function GitSource:resolve(item, callback)
         if cached_item_documentation then
             documentation = cached_item_documentation
             if documentation == '' then documentation = nil end
+            item.documentation = documentation
             callback(item)
             return
         end
@@ -380,6 +381,7 @@ function GitSource:resolve(item, callback)
             -- cache empty string
             self.cache:set({ trigger, item.label, 'documentation' }, documentation or '')
             if documentation == '' then documentation = nil end
+            item.documentation = documentation
             callback(item)
             return
         end
@@ -421,6 +423,7 @@ function GitSource:resolve(item, callback)
         -- cache empty string
         self.cache:set({ trigger, item.label, 'documentation' }, documentation or '')
         if documentation == '' then documentation = nil end
+        item.documentation = documentation
         callback(item)
     end)()
 
