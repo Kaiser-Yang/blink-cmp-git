@@ -346,7 +346,8 @@ function GitSource:get_completions(context, callback)
         callback({
             is_incomplete_backward = false,
             is_incomplete_forward = false,
-            items = vim.tbl_values(items),
+            -- vim.deepcopy is required, because blink will modify the items
+            items = vim.tbl_values(vim.deepcopy(items)),
         })
     end)()
 
