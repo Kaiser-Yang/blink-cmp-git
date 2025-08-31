@@ -65,7 +65,8 @@ function M.get_repo_owner_and_repo(do_url_encode)
     if not M.truthy(res) then
         local remote_url = M.get_repo_remote_url()
         -- remove the trailing .git, and remove the leading git@, https:// or http://
-        remote_url = remote_url:gsub('%.git$', ''):gsub('^git@', ''):gsub('^https?://', '')
+        remote_url =
+            remote_url:gsub('%.git$', ''):gsub('^git@', ''):gsub('^https?://', ''):gsub('/$', '')
         owner, repo = remote_url:match('[/:](.+)/([^/]+)$')
         if not owner or not repo then
             -- This will never happen for default configuration
