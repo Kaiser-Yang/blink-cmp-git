@@ -55,9 +55,13 @@ local function default_gitlab_mr_or_issue_get_documentation(item, is_mr)
             'Closed  at: ',
             item.closed_at,
             '\n'
-        ) .. utils.concat_when_all_true('Closed  by: ', item.closed_by.username, '') .. utils.concat_when_all_true(
+        ) .. utils.concat_when_all_true(
+            'Closed  by: ',
+            item.closed_by and item.closed_by.username or nil,
+            ''
+        ) .. utils.concat_when_all_true(
             ' (',
-            item.closed_by.name,
+            item.closed_by and item.closed_by.name or nil,
             ')'
         ) .. '\n' or '')
         .. utils.concat_when_all_true(item.description)
