@@ -133,6 +133,9 @@ local function default_gitlab_mr_issue_mention_get_command_args(command, token, 
         )
     else
         table.insert(args, 1, 'api')
+        if type_name == 'users' then
+            table.insert(args, '--paginate') -- Fetch all users
+        end
         table.insert(args, 'projects/' .. utils.get_repo_owner_and_repo(true) .. '/' .. type_name)
     end
     return args
