@@ -71,6 +71,9 @@ function M.github_repo_get_command_args(command, token, type_name)
         )
     else
         table.insert(args, 1, 'api')
+        if type_name == 'contributors' then
+            table.insert(args, '--paginate')
+        end
         table.insert(args, 'repos/' .. utils.get_repo_owner_and_repo() .. '/' .. type_name)
     end
     return args
