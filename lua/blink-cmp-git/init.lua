@@ -356,9 +356,18 @@ end
 
 --- @param context blink.cmp.Context
 function GitSource:should_show_items(context, _)
-    return context.trigger.initial_kind == 'trigger_character'
-        and context.mode ~= 'cmdline'
-        and vim.tbl_contains(self:get_trigger_characters(), context.trigger.initial_character)
+    if context.mode == 'cmdline' then return false end
+    if context.trigger.initial_kind == 'trigger_character' then
+        return vim.tbl_contains(self:get_trigger_characters(), context.trigger.initial_character)
+    end
+    local triggers = self:get_trigger_characters()
+    local line = context.line:sub(1, context.cursor[2])
+    for i = #line, 1, -1 do
+        local c = line:sub(i, i)
+        if vim.tbl_contains(triggers, c) then return true end
+        if c:match('%s') then return false end
+    end
+    return false
 end
 
 function GitSource:resolve(item, callback)
