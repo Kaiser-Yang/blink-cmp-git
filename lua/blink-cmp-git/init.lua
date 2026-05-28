@@ -311,13 +311,8 @@ function GitSource:get_completions(context, callback)
         local co = coroutine.running()
 
         local trigger = context.trigger.initial_character ---@type string
-        if
-            ---@diagnostic disable-next-line: missing-parameter
-            not self:should_show_items(context)
-            or not context.line
-                :sub(1, context.cursor[2])
-                :match(context.trigger.initial_character .. '$')
-        then
+        ---@diagnostic disable-next-line: missing-parameter
+        if not self:should_show_items(context) then
             callback()
             return
         end
