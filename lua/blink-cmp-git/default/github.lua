@@ -66,16 +66,7 @@ local function default_github_mention_get_documentation(item)
         get_token = '',
         get_command = default_github_get_command,
         get_command_args = function(command, token)
-            local args = common.basic_args_for_github_api(token)
-            if command == 'curl' then
-                table.insert(args, '-s')
-                table.insert(args, '-f')
-                table.insert(args, 'https://api.github.com/users/' .. item.login)
-            else
-                table.insert(args, 1, 'api')
-                table.insert(args, 'users/' .. item.login)
-            end
-            return args
+            return common.github_api_args(command, token, 'users/' .. item.login)
         end,
         resolve_documentation = function(output)
             local user_info = utils.json_decode(output)

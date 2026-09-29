@@ -59,20 +59,28 @@ function M.get_repo_owner_and_repo_from_octo()
     return ''
 end
 
-function M.get_repo_owner_and_repo(do_url_encode)
-    local owner, repo, res
-    res = M.get_repo_owner_and_repo_from_octo()
-    if not M.truthy(res) then
-        local remote_url = M.get_repo_remote_url()
-        -- Strip the optional `.git` suffix, any URL scheme (`ssh://`, `git://`,
-        -- `https://`, ...), any `user[:password]@` prefix, an optional `:port`
-        -- segment between host and path, and the trailing slash.
-        remote_url = remote_url
+--- Normalize a remote URL to `host/path` or `host:path`.
+--- Strip the optional `.git` suffix, any URL scheme (`ssh://`, `git://`,
+--- `https://`, ...), any `user[:password]@` prefix, an optional `:port`
+--- segment between host and path, and the trailing slash.
+--- @param remote_url string
+--- @return string
+local function normalize_remote_url(remote_url)
+    return (
+        remote_url
             :gsub('%.git$', '')
             :gsub('^[a-z]+://', '')
             :gsub('^[^/@]+@', '')
             :gsub('^([^/]-):%d+/', '%1/')
             :gsub('/$', '')
+    )
+end
+
+function M.get_repo_owner_and_repo(do_url_encode)
+    local owner, repo, res
+    res = M.get_repo_owner_and_repo_from_octo()
+    if not M.truthy(res) then
+        local remote_url = normalize_remote_url(M.get_repo_remote_url())
         owner, repo = remote_url:match('[/:](.+)/([^/]+)$')
         if not owner or not repo then
             -- This will never happen for default configuration
@@ -83,6 +91,20 @@ function M.get_repo_owner_and_repo(do_url_encode)
     end
     res = do_url_encode and M.encode_uri_component(res) or res
     return res
+end
+
+--- Get the host of the repository, e.g. `github.com` or `github.example.com`.
+--- In `octo` buffers, the host configured in `octo.nvim` is used.
+--- Return an empty string if the host can not be found.
+--- @return string
+--- @async
+function M.get_repo_host()
+    if M.truthy(M.get_repo_owner_and_repo_from_octo()) then
+        local ok, octo_config = pcall(require, 'octo.config')
+        local host = ok and octo_config.values and octo_config.values.github_hostname
+        return M.truthy(host) and host or 'github.com'
+    end
+    return normalize_remote_url(M.get_repo_remote_url()):match('^([^/:]+)[/:]') or ''
 end
 
 function M.remove_empty_string_value(tbl)
