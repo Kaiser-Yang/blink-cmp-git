@@ -506,8 +506,12 @@ git_centers = {
 }
 ```
 
-Then, you should see [how to customize the APIs](#how-to-customize-the-apis) to customize the
-request domain.
+That's all for `github`. The default `github` features request the host found in your remote URL:
+`gh` is given `--hostname HOST`, and `curl` requests `https://HOST/api/v3`. For `octo` buffers,
+`github_hostname` of `octo.nvim` is used.
+
+For `gitlab`, you should see [how to customize the APIs](#how-to-customize-the-apis) to customize
+the request domain.
 
 ### How to customize the APIs?
 
@@ -543,7 +547,8 @@ git_centers = {
                 local utils = require('blink-cmp-git.utils')
                 -- The last element is the API endpoint, customize it
                 if command == 'curl' then
-                    -- You can update the `github.com` to your enterprise's domain
+                    -- For GitHub Enterprise Server, the last element starts with
+                    -- `https://HOST/api/v3/` instead
                     args[#args] = 'https://api.github.com/repos/' ..
                         -- NOTE:
                         -- for `gitlab` users, you should use `utils.get_repo_owner_and_repo(true)`
@@ -555,9 +560,6 @@ git_centers = {
                         -- for `gitlab` users, you should use `utils.get_repo_owner_and_repo(true)`
                         utils.get_repo_owner_and_repo() ..
                         '/issues?state=all&per_page=100&sort=updated'
-                    -- use those below to customize the enterprise's domain
-                    -- table.insert(args, '--hostname')
-                    -- table.insert(args, 'github.com')
                 end
                 return args
             end,

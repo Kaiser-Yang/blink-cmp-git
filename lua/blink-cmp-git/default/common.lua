@@ -60,23 +60,52 @@ function M.basic_args_for_github_api(token)
     return args
 end
 
-function M.github_repo_get_command_args(command, token, type_name)
+--- Get the host of the GitHub repository. Fall back to `github.com` when the
+--- host can not be found from the remote URL.
+--- @return string
+--- @async
+function M.github_host()
+    local host = utils.get_repo_host()
+    return utils.truthy(host) and host or 'github.com'
+end
+
+--- Build args for `gh api` or `curl` to request the GitHub REST API.
+--- For GitHub Enterprise Server, `gh` is given `--hostname`, and `curl` requests
+--- `https://HOST/api/v3`.
+--- @param command string
+--- @param token string
+--- @param endpoint string API endpoint without the leading `/`, e.g. `users/USERNAME`
+--- @param paginate? boolean
+--- @return string[]
+--- @async
+function M.github_api_args(command, token, endpoint, paginate)
     local args = M.basic_args_for_github_api(token)
+    local host = M.github_host()
     if command == 'curl' then
+        local base_url = host == 'github.com' and 'https://api.github.com/'
+            or 'https://' .. host .. '/api/v3/'
         table.insert(args, '-s')
         table.insert(args, '-f')
-        table.insert(
-            args,
-            'https://api.github.com/repos/' .. utils.get_repo_owner_and_repo() .. '/' .. type_name
-        )
+        table.insert(args, base_url .. endpoint)
     else
         table.insert(args, 1, 'api')
-        if type_name == 'contributors' then
-            table.insert(args, '--paginate')
+        if host ~= 'github.com' then
+            table.insert(args, 2, '--hostname')
+            table.insert(args, 3, host)
         end
-        table.insert(args, 'repos/' .. utils.get_repo_owner_and_repo() .. '/' .. type_name)
+        if paginate then table.insert(args, '--paginate') end
+        table.insert(args, endpoint)
     end
     return args
+end
+
+function M.github_repo_get_command_args(command, token, type_name)
+    return M.github_api_args(
+        command,
+        token,
+        'repos/' .. utils.get_repo_owner_and_repo() .. '/' .. type_name,
+        type_name == 'contributors'
+    )
 end
 
 return M
