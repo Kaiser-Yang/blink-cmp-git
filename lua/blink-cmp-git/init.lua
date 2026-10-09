@@ -268,6 +268,16 @@ function GitSource.new(opts, config)
             end)()
         end,
     })
+    -- The highlight groups configured above are cleared by `:colorscheme` and
+    -- `:set background`, so apply them again after the colorscheme changed.
+    vim.api.nvim_create_autocmd('ColorScheme', {
+        group = blink_cmp_git_autocmd_group,
+        callback = function()
+            for kind_name in pairs(utils.get_option(self.git_source_config.kind_icons)) do
+                configure_highlight_group(kind_name)
+            end
+        end,
+    })
 
     -- call `should_reload_cache` so the default `last_git_repo` is set
     coroutine.wrap(function()
