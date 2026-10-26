@@ -76,7 +76,7 @@ local function items_for_feature(feature, running_jobs)
 
     local signal = out.signal
     local return_value = out.code
-    if signal == 9 then return {} end
+    if signal == 9 or signal == 15 then return {} end
     if return_value ~= 0 or utils.truthy(out.stderr) then
         if feature.on_error(return_value, out.stderr) then return {} end
     end
@@ -253,7 +253,7 @@ function GitSource.new(opts, config)
 
         self.cache:clear()
 
-        vim.iter(self.running_pre_cache_jobs):each(function(job) job:kill('TERM') end)
+        vim.iter(self.running_pre_cache_jobs):each(function(job) job:kill('sigterm') end)
         self.running_pre_cache_jobs = {}
         self._after_cache = nil
         coroutine.wrap(function() self:create_pre_cache_jobs() end)()
@@ -436,7 +436,7 @@ function GitSource:resolve(item, callback)
 
     return function()
         if not job then return end
-        job:kill('TERM')
+        job:kill('sigterm')
         job = nil
     end
 end
