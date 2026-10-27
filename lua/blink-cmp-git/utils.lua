@@ -176,7 +176,15 @@ function M.get_repo_remote_url(remote_name)
     return output
 end
 
-function M.get_cwd() return require('blink-cmp-git').get_latest_git_source_config().get_cwd() end
+--- Return nil when the directory does not exist, e.g. `vim.fn.getcwd()` returns
+--- an empty string after the current directory was removed. `vim.system()`
+--- throws for such a `cwd`, while the command run without it just fails.
+--- @return string?
+function M.get_cwd()
+    local cwd = require('blink-cmp-git').get_latest_git_source_config().get_cwd()
+    if cwd == nil or vim.fn.isdirectory(cwd) == 0 then return nil end
+    return cwd
+end
 
 function M.source_provider_enabled()
     local enabled =
