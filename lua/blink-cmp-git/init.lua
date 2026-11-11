@@ -133,6 +133,9 @@ function GitSource:create_pre_cache_jobs()
     end
 
     for trigger, items in pairs(all_items) do
+        -- Cache the trigger even when it has no items, so that get_completions()
+        -- can tell "no items" from "not cached yet".
+        self.cache:set(trigger, {})
         for _, item in ipairs(items) do
             self.cache:set({ trigger, item.label }, item)
         end
@@ -336,6 +339,10 @@ function GitSource:get_completions(context, callback)
             end
             coroutine.yield()
             items = self.cache:get(trigger) ---@type table<string, lsp.CompletionItem>
+        end
+        if not items then
+            callback()
+            return
         end
 
         items = vim.iter(items)
